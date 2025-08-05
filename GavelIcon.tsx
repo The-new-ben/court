@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React from "react";
 
 export const GavelIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg

@@ -4,7 +4,7 @@ export enum Role {
   DEFENDANT = "Defendant",
   WITNESS = "Witness",
   AUDIENCE = "Audience",
-  AI = "AI Legal Assistant"
+  AI = "AI Legal Assistant",
 }
 
 export interface TranscriptEntry {
