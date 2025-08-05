@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { AIHistoryEntry, AIResponse } from '../types';
-import { Spinner } from './common/Spinner';
-import { SearchIcon } from './icons/SearchIcon';
+import { Spinner } from '../Spinner';
+import { SearchIcon } from '../SearchIcon';
 
 interface AIAssistantPanelProps {
   history: AIHistoryEntry[];

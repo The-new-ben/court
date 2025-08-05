@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Logo } from './Logo';
-import { PlayIcon } from './icons/PlayIcon';
-import { StopIcon } from './icons/StopIcon';
+import { PlayIcon } from '../PlayIcon';
+import { StopIcon } from '../StopIcon';
 
 interface HeaderProps {
     onStartDemo: () => void;

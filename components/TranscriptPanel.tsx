@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import type { TranscriptEntry as TranscriptEntryType } from '../types';
 import { Role } from '../types';
-import { GavelIcon } from './icons/GavelIcon';
-import { UserIcon } from './icons/UserIcon';
-import { UsersIcon } from './icons/UsersIcon';
+import { GavelIcon } from '../GavelIcon';
+import { UserIcon } from '../UserIcon';
+import { UsersIcon } from '../UsersIcon';
 
 const getRoleStyles = (role: Role) => {
   switch (role) {

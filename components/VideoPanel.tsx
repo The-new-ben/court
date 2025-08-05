@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { UserIcon } from './icons/UserIcon';
-import { GavelIcon } from './icons/GavelIcon';
+import { UserIcon } from '../UserIcon';
+import { GavelIcon } from '../GavelIcon';
 
 const VideoFeed: React.FC<{ name: string; role: string; isJudge?: boolean, isLive?: boolean }> = ({ name, role, isJudge = false, isLive = false }) => (
     <div className={`relative rounded-lg overflow-hidden shadow-lg ${isJudge ? 'col-span-2' : ''} bg-gray-700 dark:bg-gray-900 border border-gray-600 dark:border-gray-700`}>

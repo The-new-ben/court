@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserIcon } from './icons/UserIcon';
+import { UserIcon } from '../UserIcon';
 
 const InfoItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div>
