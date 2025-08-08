@@ -4,6 +4,8 @@ import Header from './Header';
 import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
+import EvidenceViewer from './EvidenceViewer';
+import { evidenceService } from '../services/evidenceService';
 import { Case, caseService } from '../services/caseService';
 
 export default function MainApp() {
@@ -12,9 +14,23 @@ export default function MainApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cases');
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCases();
+  }, []);
+
+  useEffect(() => {
+    const initEvidence = async () => {
+      const ev = await evidenceService.addEvidence({
+        owner: 'clerk',
+        source: 'upload',
+        content: 'Sample evidence'
+      });
+      await evidenceService.transferEvidence(ev.id, 'archive');
+      setEvidenceId(ev.id);
+    };
+    initEvidence();
   }, []);
 
   const loadCases = async () => {
@@ -67,6 +83,16 @@ export default function MainApp() {
                 דיונים משפטיים
               </button>
               <button
+                onClick={() => setActiveTab('evidence')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'evidence'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                ראיות
+              </button>
+              <button
                 onClick={() => setActiveTab('admin')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'admin'
@@ -82,7 +108,7 @@ export default function MainApp() {
 
         {activeTab === 'cases' && (
           <>
-            <CaseForm 
+            <CaseForm
               onNewCase={handleNewCase}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
@@ -106,6 +132,10 @@ export default function MainApp() {
 
             <CasesList cases={filteredCases} searchTerm={searchTerm} />
           </>
+        )}
+
+        {activeTab === 'evidence' && evidenceId && (
+          <EvidenceViewer evidenceId={evidenceId} />
         )}
 
         {activeTab === 'admin' && user?.role === 'admin' && (
