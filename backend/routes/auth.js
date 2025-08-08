@@ -47,14 +47,23 @@ router.post('/register',
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Create user
+      // Generate unique referral code
+      let referralCode;
+      do {
+        referralCode = Math.random().toString(36).substring(2, 8);
+      } while (users.find(u => u.referralCode === referralCode));
+
+      // Create user with referral fields
       const user = {
         id: Date.now().toString(),
         email,
         password: hashedPassword,
         name,
         role,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        points: 0,
+        referralCode,
+        referrerId: null
       };
 
       users.push(user);
@@ -75,7 +84,10 @@ router.post('/register',
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
+          points: user.points,
+          referralCode: user.referralCode,
+          referrerId: user.referrerId
         }
       });
 
@@ -133,7 +145,10 @@ router.post('/login',
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
+          points: user.points,
+          referralCode: user.referralCode,
+          referrerId: user.referrerId
         }
       });
 
