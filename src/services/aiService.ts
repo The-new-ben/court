@@ -1,7 +1,9 @@
+import type { ChatMessage } from '../../types';
+
 const API_URL = 'http://localhost:5001/api';
 
 export const aiService = {
-  async chat(messages: any[], model: string) {
+  async chat(messages: ChatMessage[], model: string) {
     const token = localStorage.getItem('hypercourt_token');
     
     const response = await fetch(`${API_URL}/ai/chat`, {
