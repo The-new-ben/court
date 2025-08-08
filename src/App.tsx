@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import AuthContainer from './components/AuthContainer';
+import React from 'react';
 import MainApp from './components/MainApp';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function AppContent() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -15,7 +14,7 @@ function AppContent() {
     );
   }
 
-  return user ? <MainApp /> : <AuthContainer />;
+  return <MainApp />;
 }
 
 function App() {

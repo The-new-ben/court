@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+import React, { createContext, useContext, useState } from 'react';
+// TODO: Restore authentication once UI work is complete
+// import { authService } from '../services/authService';
 
 interface User {
   email: string;
@@ -17,46 +18,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Temporary stubbed user; replace with real auth logic later
+  const [user] = useState<User | null>({ email: 'dummy@example.com', role: 'guest' });
+  const [isLoading] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('hypercourt_token');
-    const userData = localStorage.getItem('hypercourt_user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Invalid user data in localStorage');
-        logout();
-      }
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    const response = await authService.login(email, password);
-    localStorage.setItem('hypercourt_token', response.token);
-    localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
-    setUser(response.user);
-  };
-
-  const register = async (email: string, password: string, role: string, name: string) => {
-    const response = await authService.register(email, password, role, name);
-    // Auto-login after successful registration
-    if (response.token) {
-      localStorage.setItem('hypercourt_token', response.token);
-      localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
-      setUser(response.user);
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('hypercourt_token');
-    localStorage.removeItem('hypercourt_user');
-    setUser(null);
-  };
+  const login = async () => {};
+  const register = async () => {};
+  const logout = () => {};
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
