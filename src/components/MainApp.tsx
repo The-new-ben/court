@@ -4,6 +4,7 @@ import Header from './Header';
 import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
+import ViewerStatsBar from './ViewerStatsBar';
 import { Case, caseService } from '../services/caseService';
 
 export default function MainApp() {
@@ -51,7 +52,8 @@ export default function MainApp() {
       </div>
 
       <Header />
-      
+      <ViewerStatsBar />
+
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
         {user?.role === 'admin' && (
           <div className="mb-6 border-b border-gray-200">
