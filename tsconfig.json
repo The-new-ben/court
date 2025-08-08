@@ -1,12 +1,4 @@
 {
-<<<<<<< HEAD
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
-}
-=======
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
@@ -24,12 +16,9 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
   }
 }
->>>>>>> 01642d5817bb4a7778b9eefaa7f0ebe7627adaa9

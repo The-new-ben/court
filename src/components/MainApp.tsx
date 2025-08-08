@@ -4,6 +4,7 @@ import Header from './Header';
 import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
+import WaitlistBanner from './WaitlistBanner';
 import { Case, caseService } from '../services/caseService';
 
 export default function MainApp() {
@@ -12,6 +13,7 @@ export default function MainApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cases');
+  const [isLobbyFull] = useState(true);
 
   useEffect(() => {
     loadCases();
@@ -53,6 +55,7 @@ export default function MainApp() {
       <Header />
       
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+        {isLobbyFull && <WaitlistBanner />}
         {user?.role === 'admin' && (
           <div className="mb-6 border-b border-gray-200">
             <nav className="flex space-x-8">
