@@ -1,9 +1,13 @@
+import { CaseStage, CaseHistoryEntry } from '../cases/types';
+
 export interface Case {
   id: string;
   description: string;
   opinions: { system: string; reply: string }[];
   balanced: string;
   timestamp: string;
+  stage: CaseStage;
+  history: CaseHistoryEntry[];
 }
 
 const DB_NAME = 'courtDBv6';
@@ -34,6 +38,22 @@ class CaseService {
       store.put(caseData);
     } catch (error) {
       console.warn('Could not save to IndexedDB', error);
+    }
+  }
+
+  async getCase(id: string): Promise<Case | undefined> {
+    try {
+      const db = await this.openDB();
+      return new Promise((resolve) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result as Case | undefined);
+        request.onerror = () => resolve(undefined);
+      });
+    } catch (error) {
+      console.warn('Could not read case from IndexedDB', error);
+      return undefined;
     }
   }
 

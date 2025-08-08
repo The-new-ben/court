@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Case } from '../services/caseService';
-import { Download, ChevronDown, ChevronUp, Copy, ZoomIn } from 'lucide-react';
+import { caseStateService } from '../cases/service';
+import { allowedTransitions, CaseStage } from '../cases/types';
+import { Download, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { highlightText, truncateText } from '../utils/textHighlight';
 
 interface CaseCardProps {
@@ -10,19 +12,20 @@ interface CaseCardProps {
 
 export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [localCase, setLocalCase] = useState<Case>(caseData);
 
   const downloadCase = () => {
-    let fileContent = `HyperCourt - סיכום דיון\n==============================\n\nתאריך: ${caseData.timestamp}\n\n`;
-    fileContent += `---------- תיאור המקרה ----------\n\n${caseData.description}\n\n`;
-    caseData.opinions.forEach(opinion => {
+    let fileContent = `HyperCourt - סיכום דיון\n==============================\n\nתאריך: ${localCase.timestamp}\n\n`;
+    fileContent += `---------- תיאור המקרה ----------\n\n${localCase.description}\n\n`;
+    localCase.opinions.forEach(opinion => {
       fileContent += `---------- חוות דעת (${opinion.system}) ----------\n\n${opinion.reply}\n\n`;
     });
-    fileContent += `---------- פסק-דין מאוזן ----------\n\n${caseData.balanced}\n`;
+    fileContent += `---------- פסק-דין מאוזן ----------\n\n${localCase.balanced}\n`;
     
     const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `hyper_court_case_${caseData.id.slice(0,8)}.txt`;
+    link.download = `hyper_court_case_${localCase.id.slice(0,8)}.txt`;
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -31,17 +34,29 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
     navigator.clipboard.writeText(text);
   };
 
+  const nextStage: CaseStage | undefined = allowedTransitions[localCase.stage][0];
+
+  const advanceStage = async (stage: CaseStage) => {
+    try {
+      const updated = await caseStateService.moveToStage(localCase.id, stage);
+      setLocalCase(updated);
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden transition-all duration-300">
-      <div 
+      <div
         className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex-1">
           <h3 className="font-medium text-gray-900 line-clamp-1">
-            {truncateText(caseData.description, 80)}
+            {truncateText(localCase.description, 80)}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">{caseData.timestamp}</p>
+          <p className="text-sm text-gray-500 mt-1">{localCase.timestamp}</p>
+          <p className="text-xs text-gray-600 mt-1">שלב נוכחי: {localCase.stage}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -60,12 +75,20 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
 
       {isExpanded && (
         <div className="border-t border-gray-200 p-4 space-y-6">
+          {nextStage && (
+            <button
+              onClick={() => advanceStage(nextStage)}
+              className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+            >
+              עבור לשלב {nextStage}
+            </button>
+          )}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-blue-700">תיאור המקרה:</h4>
               <div className="flex gap-1">
                 <button
-                  onClick={() => copyToClipboard(caseData.description)}
+                  onClick={() => copyToClipboard(localCase.description)}
                   className="p-1 text-gray-400 hover:text-gray-600"
                   title="העתק"
                 >
@@ -73,13 +96,13 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
                 </button>
               </div>
             </div>
-            <div 
+            <div
               className="text-gray-800 bg-gray-50 p-3 rounded-md"
-              dangerouslySetInnerHTML={{ __html: highlightText(caseData.description, searchTerm) }}
+              dangerouslySetInnerHTML={{ __html: highlightText(localCase.description, searchTerm) }}
             />
           </div>
 
-          {caseData.opinions.map((opinion, index) => (
+          {localCase.opinions.map((opinion, index) => (
             <div key={index} className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-purple-700">
@@ -95,7 +118,7 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
                   </button>
                 </div>
               </div>
-              <div 
+              <div
                 className="text-gray-800 bg-purple-50 p-3 rounded-md"
                 dangerouslySetInnerHTML={{ __html: highlightText(opinion.reply, searchTerm) }}
               />
@@ -107,7 +130,7 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
               <h4 className="font-medium text-green-700">פסק-דין מאוזן:</h4>
               <div className="flex gap-1">
                 <button
-                  onClick={() => copyToClipboard(caseData.balanced)}
+                  onClick={() => copyToClipboard(localCase.balanced)}
                   className="p-1 text-gray-400 hover:text-gray-600"
                   title="העתק"
                 >
@@ -115,10 +138,19 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
                 </button>
               </div>
             </div>
-            <div 
+            <div
               className="text-gray-800 bg-green-50 p-3 rounded-md font-medium"
-              dangerouslySetInnerHTML={{ __html: highlightText(caseData.balanced, searchTerm) }}
+              dangerouslySetInnerHTML={{ __html: highlightText(localCase.balanced, searchTerm) }}
             />
+          </div>
+
+          <div>
+            <h4 className="font-medium text-gray-700 mb-2">היסטוריית שלבים:</h4>
+            <ul className="list-disc list-inside text-sm text-gray-600">
+              {localCase.history.map((h, i) => (
+                <li key={i}>{h.stage} - {new Date(h.timestamp).toLocaleString('he-IL')}</li>
+              ))}
+            </ul>
           </div>
         </div>
       )}
