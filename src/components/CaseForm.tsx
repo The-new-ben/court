@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { aiService } from '../services/aiService';
 import { Case } from '../services/caseService';
 import { Mic, Video, Upload, Play } from 'lucide-react';
+import { pointsService } from '../services/pointsService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CaseFormProps {
   onNewCase: (caseData: Case) => void;
@@ -14,6 +16,15 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
   const [selectedSystems, setSelectedSystems] = useState<string[]>(['common law']);
   const [selectedModel, setSelectedModel] = useState('openai/gpt-oss-20b:fireworks-ai');
   const [error, setError] = useState('');
+  const [points, setPoints] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      pointsService.getPoints(user.id).then(setPoints).catch(() => setPoints(0));
+    }
+  }, [user]);
 
   const systems = [
     { value: 'common law', label: 'משפט מקובל (Common Law)' },
@@ -86,6 +97,10 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
       };
 
       onNewCase(caseData);
+      if (user) {
+        const updated = await pointsService.awardPoints(user.id, 20);
+        setPoints(updated);
+      }
       setDescription('');
       
       // Notifications
@@ -104,9 +119,17 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (user && e.target.files && e.target.files.length > 0) {
+      const updated = await pointsService.awardPoints(user.id, 10);
+      setPoints(updated);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
       <div>
+        <div className="text-right text-sm text-gray-600 mb-2">נקודות: {points}</div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           בחר מסגרות משפט:
         </label>
@@ -191,14 +214,23 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
           וידאו
         </button>
         
-        <button
-          className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-          title="העלה מסמכים"
-          disabled={isLoading}
-        >
-          <Upload size={16} />
-          מסמכים
-        </button>
+        <>
+          <button
+            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+            title="העלה מסמכים"
+            disabled={isLoading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={16} />
+            מסמכים
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+        </>
       </div>
     </div>
   );
