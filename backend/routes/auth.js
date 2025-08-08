@@ -1,9 +1,9 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
-const { users } = require('../middleware/auth');
+const connect = require('../db');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -36,38 +36,18 @@ router.post('/register',
       }
 
       const { email, password, name, role } = req.body;
-
-      // Check if user already exists
-      const existingUser = users.find(u => u.email === email);
+      await connect();
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ error: 'משתמש עם אימייל זה כבר קיים' });
       }
-
-      // Hash password
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-      // Create user
-      const user = {
-        id: Date.now().toString(),
-        email,
-        password: hashedPassword,
-        name,
-        role,
-        createdAt: new Date().toISOString()
-      };
-
-      users.push(user);
-
-      // Generate JWT
+      const user = await User.create({ email, password, name, role });
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
       console.log(`New user registered: ${email} (${role})`);
-
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
         token,
@@ -104,28 +84,21 @@ router.post('/login',
       }
 
       const { email, password } = req.body;
-
-      // Find user
-      const user = users.find(u => u.email === email);
+      await connect();
+      const user = await User.findOne({ email });
       if (!user) {
         return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
       }
-
-      // Check password
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await user.comparePassword(password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
       }
-
-      // Generate JWT
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
       console.log(`User logged in: ${email} (${user.role})`);
-
       res.json({
         message: 'התחברת בהצלחה',
         token,
