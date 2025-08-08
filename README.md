@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HyperCourt Enterprise - מערכת משפטית מתקדמת
 
 מערכת משפטית מתקדמת עם ארכיטקטורה מיקרו-שירותים, אבטחה מתקדמת ותמיכה בפריסה בענן.
@@ -186,3 +187,19 @@ MIT License - ראה קובץ LICENSE לפרטים נוספים.
 ---
 
 **HyperCourt Enterprise** - מערכת משפטית מתקדמת לעידן הדיגיטלי
+=======
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
+>>>>>>> 01642d5817bb4a7778b9eefaa7f0ebe7627adaa9
