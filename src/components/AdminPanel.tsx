@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Database, Settings, Activity, Shield, AlertTriangle } from 'lucide-react';
 
+interface LogFilters {
+  user: string;
+  action: string;
+}
+
+interface AuditLog {
+  user: string;
+  action: string;
+  timestamp: string;
+}
+
 export default function AdminPanel() {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -8,11 +19,18 @@ export default function AdminPanel() {
     systemHealth: 'תקין',
     lastBackup: 'לא זמין'
   });
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [logFilters, setLogFilters] = useState<LogFilters>({ user: '', action: '' });
 
   useEffect(() => {
     // Load admin statistics
     loadStats();
+    loadLogs();
   }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [logFilters]);
 
   const loadStats = async () => {
     try {
@@ -88,6 +106,27 @@ export default function AdminPanel() {
       };
     } catch (error) {
       alert('שגיאה ביצירת גיבוי: ' + error);
+    }
+  };
+
+  const loadLogs = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (logFilters.user) params.append('user', logFilters.user);
+      if (logFilters.action) params.append('action', logFilters.action);
+      const token = localStorage.getItem('hypercourt_token');
+      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data);
+      } else {
+        setLogs([]);
+      }
+    } catch (error) {
+      console.warn('Could not load audit logs:', error);
+      setLogs([]);
     }
   };
 
@@ -222,6 +261,47 @@ export default function AdminPanel() {
             <p>• סביבת הפעלה: {import.meta.env.PROD ? 'Production' : 'Development'}</p>
             <p>• בסיס נתונים: IndexedDB (מקומי)</p>
             <p>• שרת אימות: Node.js + Express</p>
+          </div>
+        </div>
+
+        {/* Audit Logs */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">יומן פעולות</h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="משתמש"
+              className="border rounded p-2 flex-1"
+              value={logFilters.user}
+              onChange={e => setLogFilters(prev => ({ ...prev, user: e.target.value }))}
+            />
+            <input
+              type="text"
+              placeholder="פעולה"
+              className="border rounded p-2 flex-1"
+              value={logFilters.action}
+              onChange={e => setLogFilters(prev => ({ ...prev, action: e.target.value }))}
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">משתמש</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">פעולה</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">זמן</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logs.map((log, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.user}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.action}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{new Date(log.timestamp).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
