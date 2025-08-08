@@ -19,10 +19,11 @@ export default function Header() {
               ברוך הבא, {user?.email}
             </p>
             <p className="text-xs text-gray-500">
-              {user?.role === 'admin' ? 'מנהל מערכת' : 
+              {user?.role === 'admin' ? 'מנהל מערכת' :
                user?.role === 'lawyer' ? 'עורך/ת דין' :
                user?.role === 'judge' ? 'שופט/ת' :
-               user?.role === 'plaintiff' ? 'תובע/ת' : user?.role}
+               user?.role === 'litigant' ? 'מתדיין/נת' :
+               user?.role === 'clerk' ? 'פקיד/ת' : user?.role}
             </p>
           </div>
           <button

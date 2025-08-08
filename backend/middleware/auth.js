@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 // In-memory user storage (replace with database in production)
 const users = [];
 
+// Supported roles in the system
+const VALID_ROLES = ['admin', 'judge', 'lawyer', 'litigant', 'clerk'];
+
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   
@@ -37,4 +40,4 @@ function requireRole(roles) {
   };
 }
 
-module.exports = { authMiddleware, requireRole, users };
+module.exports = { authMiddleware, requireRole, users, VALID_ROLES };

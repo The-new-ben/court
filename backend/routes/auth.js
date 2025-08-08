@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
-const { users } = require('../middleware/auth');
+const { users, VALID_ROLES } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.post('/register',
     body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
     body('password').isLength({ min: 8 }).withMessage('סיסמה חייבת להכיל לפחות 8 תווים'),
     body('name').trim().isLength({ min: 2 }).withMessage('שם חייב להכיל לפחות 2 תווים'),
-    body('role').isIn(['admin', 'lawyer', 'plaintiff', 'judge']).withMessage('תפקיד לא תקין')
+    body('role').isIn(VALID_ROLES).withMessage('תפקיד לא תקין')
   ],
   async (req, res) => {
     try {
