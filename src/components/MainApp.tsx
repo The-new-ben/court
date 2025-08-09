@@ -5,6 +5,7 @@ import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
 import ViewerStatsBar from './ViewerStatsBar';
+import WaitlistBanner from './WaitlistBanner';
 import EvidenceViewer from './EvidenceViewer';
 import { evidenceService } from '../services/evidenceService';
 import ProfileSettings from './ProfileSettings';
@@ -17,6 +18,7 @@ export default function MainApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cases');
+  const [isLobbyFull] = useState(true);
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -74,6 +76,20 @@ export default function MainApp() {
       <ViewerStatsBar />
 
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+        {isLobbyFull && <WaitlistBanner />}
+        {user?.role === 'admin' && (
+          <div className="mb-6 border-b border-gray-200">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab('cases')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'cases'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                דיונים משפטיים
+              </button>
         <div className="mb-6 border-b border-gray-200">
           <nav className="flex space-x-8">
             <button

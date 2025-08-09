@@ -3,12 +3,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
+const { getUserByEmail, getUserByReferralCode, insertUser } = require('../middleware/auth');
+const { users, VALID_ROLES } = require('../middleware/auth');
 const { users } = require('../middleware/auth');
 const { getErrorMessage } = require('../services/errorMessages');
 const User = require('../models/User');
 
 const router = express.Router();
 
+const authLimiter = rateLimit({
+  windowMs: 900000,
 // Rate limiting for auth endpoints
 const WINDOW_MS = parseInt(process.env.AUTH_WINDOW_MS, 10) || 15 * 60 * 1000;
 const MAX_REQUESTS = parseInt(process.env.AUTH_MAX_REQUESTS, 10) || 10;
@@ -32,11 +36,16 @@ const authLimiter = rateLimit({
   },
 });
 
+router.post('/register',
 // Registration endpoint
 router.post(
   '/register',
   authLimiter,
   [
+    body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
+    body('password').isLength({ min: 8 }).withMessage('סיסמה חייבת להכיל לפחות 8 תווים'),
+    body('name').trim().isLength({ min: 2 }).withMessage('שם חייב להכיל לפחות 2 תווים'),
+    body('role').isIn(VALID_ROLES).withMessage('תפקיד לא תקין')
     body('email').isEmail().withMessage((value, { req }) =>
       getErrorMessage('INVALID_EMAIL', req.headers['accept-language'])
     ),
@@ -63,19 +72,22 @@ router.post(
 
       const { email, password, name, role } = req.body;
 
+      const existingUser = await getUserByEmail(email);
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ error: getErrorMessage('USER_EXISTS', req.headers['accept-language']) });
       }
 
-      // Hash password
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Generate unique referral code
       let referralCode;
       do {
+        referralCode = Math.random().toString(36).slice(2, 8);
+      } while (await getUserByReferralCode(referralCode));
+
+      const newUser = await insertUser({
         referralCode = Math.random().toString(36).substring(2, 8);
       } while (await User.findOne({ referralCode }));
 
@@ -85,13 +97,19 @@ router.post(
         password: hashedPassword,
         name,
         role,
+        createdAt: new Date().toISOString(),
+        points: 0,
+        referralCode,
+        referrerId: null
+      });
+
         referralCode
       });
       await user.save();
 
       // Generate JWT
       const token = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
+        { userId: newUser.id, email: newUser.email, role: newUser.role },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -117,6 +135,7 @@ router.post(
           referrerId: user.referrerId
         }
         token,
+        user: newUser
         user: user.toJSON()
       });
     } catch (error) {
@@ -126,6 +145,7 @@ router.post(
   }
 );
 
+router.post('/login',
 // Login endpoint
 router.post(
   '/login',
@@ -151,19 +171,18 @@ router.post(
 
       const { email, password } = req.body;
 
+      const user = await getUserByEmail(email);
       // Find user
       const user = await User.findOne({ email });
       if (!user) {
         return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
 
-      // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
 
-      // Generate JWT
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,

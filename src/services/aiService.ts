@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import type { ChatMessage } from '../../types';
 
 const API_URL = 'http://localhost:5001/api';
@@ -8,6 +9,9 @@ export const aiService = {
     const token = localStorage.getItem('hypercourt_token');
     
   async chat(messages: any[], model: string) {
+    const token = localStorage.getItem('hypercourt_token');
+    
+    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
     const response = await fetch(`${API_URL}/ai/chat`, {
       method: 'POST',
       headers: {

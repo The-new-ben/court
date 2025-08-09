@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import AuthContainer from './components/AuthContainer';
+import React from 'react';
 import MainApp from './components/MainApp';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 function AppContent() {
+  const { isLoading } = useAuth();
   const { user, isLoading } = useAuth();
   const { t } = useLanguage();
 
@@ -17,7 +17,7 @@ function AppContent() {
     );
   }
 
-  return user ? <MainApp /> : <AuthContainer />;
+  return <MainApp />;
 }
 
 function App() {
