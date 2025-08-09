@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Case } from '../services/caseService';
-import { Download, ChevronDown, ChevronUp, Copy, ZoomIn } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { highlightText, truncateText } from '../utils/textHighlight';
+import { suggestPrecedents } from '../../geminiService';
+import type { AIResponse } from '../../types';
 
 interface CaseCardProps {
   caseData: Case;
@@ -10,6 +12,9 @@ interface CaseCardProps {
 
 export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'research'>('details');
+  const [research, setResearch] = useState<AIResponse | null>(null);
+  const [isResearchLoading, setIsResearchLoading] = useState(false);
 
   const downloadCase = () => {
     let fileContent = `HyperCourt - סיכום דיון\n==============================\n\nתאריך: ${caseData.timestamp}\n\n`;
@@ -31,9 +36,23 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
     navigator.clipboard.writeText(text);
   };
 
+  const handleTabChange = (tab: 'details' | 'research') => {
+    setActiveTab(tab);
+    if (tab === 'research' && !research && !isResearchLoading) {
+      setIsResearchLoading(true);
+      suggestPrecedents(caseData.description)
+        .then(setResearch)
+        .catch((error) => {
+          console.error('Research error:', error);
+          setResearch({ text: 'שגיאה בעת שליפת המחקר.' });
+        })
+        .finally(() => setIsResearchLoading(false));
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden transition-all duration-300">
-      <div 
+      <div
         className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -54,72 +73,110 @@ export default function CaseCard({ caseData, searchTerm }: CaseCardProps) {
           >
             <Download size={16} />
           </button>
-          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </div>
+        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
       </div>
+    </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4 space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-blue-700">תיאור המקרה:</h4>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => copyToClipboard(caseData.description)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                  title="העתק"
-                >
-                  <Copy size={14} />
-                </button>
-              </div>
-            </div>
-            <div 
-              className="text-gray-800 bg-gray-50 p-3 rounded-md"
-              dangerouslySetInnerHTML={{ __html: highlightText(caseData.description, searchTerm) }}
-            />
+        <div className="border-t border-gray-200">
+          <div className="flex border-b">
+            <button
+              onClick={() => handleTabChange('details')}
+              className={`px-4 py-2 text-sm font-medium ${
+                activeTab === 'details' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'
+              }`}
+            >
+              פירוט
+            </button>
+            <button
+              onClick={() => handleTabChange('research')}
+              className={`px-4 py-2 text-sm font-medium ${
+                activeTab === 'research' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'
+              }`}
+            >
+              מחקר
+            </button>
           </div>
 
-          {caseData.opinions.map((opinion, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-purple-700">
-                  עמדת {opinion.system}:
-                </h4>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => copyToClipboard(opinion.reply)}
-                    className="p-1 text-gray-400 hover:text-gray-600"
-                    title="העתק"
-                  >
-                    <Copy size={14} />
-                  </button>
+          {activeTab === 'details' && (
+            <div className="p-4 space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-blue-700">תיאור המקרה:</h4>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => copyToClipboard(caseData.description)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="העתק"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
                 </div>
+                <div
+                  className="text-gray-800 bg-gray-50 p-3 rounded-md"
+                  dangerouslySetInnerHTML={{ __html: highlightText(caseData.description, searchTerm) }}
+                />
               </div>
-              <div 
-                className="text-gray-800 bg-purple-50 p-3 rounded-md"
-                dangerouslySetInnerHTML={{ __html: highlightText(opinion.reply, searchTerm) }}
-              />
-            </div>
-          ))}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-green-700">פסק-דין מאוזן:</h4>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => copyToClipboard(caseData.balanced)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                  title="העתק"
-                >
-                  <Copy size={14} />
-                </button>
+              {caseData.opinions.map((opinion, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-purple-700">
+                      עמדת {opinion.system}:
+                    </h4>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => copyToClipboard(opinion.reply)}
+                        className="p-1 text-gray-400 hover:text-gray-600"
+                        title="העתק"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className="text-gray-800 bg-purple-50 p-3 rounded-md"
+                    dangerouslySetInnerHTML={{ __html: highlightText(opinion.reply, searchTerm) }}
+                  />
+                </div>
+              ))}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-green-700">פסק-דין מאוזן:</h4>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => copyToClipboard(caseData.balanced)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="העתק"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className="text-gray-800 bg-green-50 p-3 rounded-md font-medium"
+                  dangerouslySetInnerHTML={{ __html: highlightText(caseData.balanced, searchTerm) }}
+                />
               </div>
             </div>
-            <div 
-              className="text-gray-800 bg-green-50 p-3 rounded-md font-medium"
-              dangerouslySetInnerHTML={{ __html: highlightText(caseData.balanced, searchTerm) }}
-            />
-          </div>
+          )}
+
+          {activeTab === 'research' && (
+            <div className="p-4">
+              {isResearchLoading && <div className="text-gray-500">טוען מחקר...</div>}
+              {!isResearchLoading && research && (
+                <div
+                  className="text-gray-800 bg-blue-50 p-3 rounded-md whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: highlightText(research.text, searchTerm) }}
+                />
+              )}
+              {!isResearchLoading && !research && (
+                <div className="text-gray-500">אין תוצאות מחקר זמינות.</div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
