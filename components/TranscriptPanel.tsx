@@ -1,3 +1,9 @@
+import React, { useEffect, useRef } from 'react';
+import type { TranscriptEntry as TranscriptEntryType } from '../types';
+import { Role } from '../types';
+import { GavelIcon } from '../GavelIcon';
+import { UserIcon } from '../UserIcon';
+import { UsersIcon } from '../UsersIcon';
 import React, { useEffect, useRef } from "react";
 import type { TranscriptEntry as TranscriptEntryType } from "../types";
 import { Role } from "../types";
