@@ -4,7 +4,9 @@ import Header from './Header';
 import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
+import ProfileSettings from './ProfileSettings';
 import { Case, caseService } from '../services/caseService';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function MainApp() {
   const { user } = useAuth();
@@ -12,6 +14,7 @@ export default function MainApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cases');
+  const { t } = useLanguage();
 
   useEffect(() => {
     loadCases();
@@ -28,7 +31,7 @@ export default function MainApp() {
   };
 
   const handleClearAll = async () => {
-    if (confirm('האם למחוק את כל הדיונים לצמיתות?')) {
+    if (confirm(t('main.confirmClear'))) {
       await caseService.clearAllCases();
       setCases([]);
     }
@@ -46,26 +49,26 @@ export default function MainApp() {
       <div className={`${isLoading ? 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' : 'hidden'}`}>
         <div className="bg-white rounded-lg p-6 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-xl">מעבד...</div>
+          <div className="text-xl">{t('main.processing')}</div>
         </div>
       </div>
 
       <Header />
-      
+
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        {user?.role === 'admin' && (
-          <div className="mb-6 border-b border-gray-200">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('cases')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'cases'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                דיונים משפטיים
-              </button>
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('cases')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'cases'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('main.tab.cases')}
+            </button>
+            {user?.role === 'admin' && (
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -74,11 +77,21 @@ export default function MainApp() {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                ניהול מערכת
+                {t('main.tab.admin')}
               </button>
-            </nav>
-          </div>
-        )}
+            )}
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'profile'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t('main.tab.profile')}
+            </button>
+          </nav>
+        </div>
 
         {activeTab === 'cases' && (
           <>
@@ -91,7 +104,7 @@ export default function MainApp() {
             <div className="mt-6 flex gap-4 items-center">
               <input
                 type="text"
-                placeholder="חיפוש בדיונים..."
+                placeholder={t('main.search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -100,7 +113,7 @@ export default function MainApp() {
                 onClick={handleClearAll}
                 className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors"
               >
-                נקה הכל
+                {t('main.clearAll')}
               </button>
             </div>
 
@@ -110,6 +123,10 @@ export default function MainApp() {
 
         {activeTab === 'admin' && user?.role === 'admin' && (
           <AdminPanel />
+        )}
+
+        {activeTab === 'profile' && (
+          <ProfileSettings />
         )}
       </main>
     </div>
