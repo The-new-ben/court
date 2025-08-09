@@ -28,6 +28,7 @@ const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const caseRoutes = require('./routes/cases');
 const logRoutes = require('./routes/logs');
+const { getUserCount } = require('./middleware/auth');
 const User = require('./models/User');
 
 const app = express();
@@ -55,6 +56,10 @@ app.use('/api/logs', logRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
+    const count = await getUserCount();
+    res.json({ status: 'ok', users: count });
+  } catch (err) {
+    res.status(500).json({ status: 'error' });
     const count = await User.countDocuments();
     res.json({ status: 'ok', users: count });
   } catch (err) {
