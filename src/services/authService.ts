@@ -1,6 +1,8 @@
 const API_URL = 'http://localhost:5001/api/auth';
 let accessToken: string | null = null;
 let tokenExpiry = 0;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const AUTH_URL = `${API_URL}/auth`;
 
 const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 10000) => {
   const controller = new AbortController();
@@ -55,6 +57,20 @@ export const authService = {
       tokenExpiry = payload.exp * 1000;
     } catch {
       tokenExpiry = 0;
+      const response = await fetchWithTimeout(`${AUTH_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        handleApiError(data, response);
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
     }
   },
 
@@ -104,6 +120,21 @@ export const authService = {
     const data = await response.json();
     if (!response.ok) {
       handleApiError(data, response);
+    try {
+      const response = await fetchWithTimeout(`${AUTH_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role, name })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        handleApiError(data, response);
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
     }
     authService.setSession(data.token);
     return data;
@@ -122,6 +153,19 @@ export const authService = {
     const token = await (async () => {
       if (accessToken && Date.now() < tokenExpiry) {
         return accessToken;
+    try {
+      const token = localStorage.getItem('hypercourt_token');
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        handleApiError(data, response);
       }
       const refreshed = await authService.refresh();
       return refreshed ? accessToken : null;

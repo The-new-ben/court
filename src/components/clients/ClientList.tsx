@@ -8,13 +8,15 @@ interface Client {
   history: string[];
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 export default function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('hypercourt_token');
-    fetch('http://localhost:5001/api/clients', {
+    fetch(`${API_URL}/clients`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
