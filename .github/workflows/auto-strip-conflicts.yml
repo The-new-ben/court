@@ -1,52 +1,46 @@
 name: Auto clean conflict markers & merge PRs
 
 on:
-  # רץ על כל PR (גם ישנים), מהקובץ שב-main
   pull_request_target:
     types: [opened, synchronize, reopened, edited, ready_for_review]
-  # כפתור ידני: Actions → "Run workflow" → יתקן את כל ה-PRים הפתוחים
   workflow_dispatch:
     inputs:
       merge_method:
-        description: "merge | squash | rebase"
+        description: "merge method: merge | squash | rebase"
         required: true
         default: "merge"
+  schedule:
+    - cron: "*/15 * * * *"  # כל 15 דקות עובר על PRים פתוחים
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  fix_and_merge:
+  clean_and_merge:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Figure out PR list (single on PR event, all on manual)
-        id: prs
+      - name: Pick PRs list (event → אחד; schedule/button → כולם)
+        id: pick
         uses: actions/github-script@v7
         with:
           script: |
-            const isDispatch = context.eventName === 'workflow_dispatch';
-            const mergeMethod = isDispatch
+            const event = context.eventName;
+            const method = event === 'workflow_dispatch'
               ? core.getInput('merge_method')
               : 'merge';
-
             let prs = [];
-            if (isDispatch) {
-              // כל ה-PRים הפתוחים בריפו
-              const { data } = await github.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                state: 'open',
-                per_page: 100
-              });
-              prs = data;
-            } else {
+            if (event === 'pull_request_target') {
               prs = [context.payload.pull_request];
+            } else {
+              // schedule / manual → כל ה-PRים הפתוחים
+              const all = await github.paginate(
+                github.pulls.list,
+                { owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100 }
+              );
+              prs = all;
             }
-
-            // נשמור כ-JSON מוצפן לפסיעה הבאה
-            core.setOutput('merge_method', mergeMethod);
+            core.setOutput('merge_method', method);
             core.setOutput('prs', JSON.stringify(prs.map(p => ({
               number: p.number,
               headRef: p.head.ref,
@@ -55,11 +49,10 @@ jobs:
               isFork: p.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`
             }))));
 
-      - name: Clean & push changes for each PR (skip forks)
-        if: ${{ steps.prs.outputs.prs != '' }}
+      - name: Clean conflict markers (skip forks for safety)
+        if: ${{ steps.pick.outputs.prs != '' }}
         env:
-          PRS_JSON: ${{ steps.prs.outputs.prs }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRS_JSON: ${{ steps.pick.outputs.prs }}
         run: |
           set -euo pipefail
           echo "$PRS_JSON" | jq -c '.[]' | while read -r pr; do
@@ -71,18 +64,16 @@ jobs:
 
             echo "=== PR #$num  ($headRepo:$headRef -> $baseRef)"
             if [ "$isFork" = "true" ]; then
-              echo "Fork detected — skipping push for safety."
-              gh pr comment "$num" -b "⚠️ זה PR מ-fork, לא דוחפים לשם אוטומטית. בבקשה עדכן את הענף מול $baseRef או אשר לי להציע תיקון כ-PR."
+              echo "Fork detected — skipping push (בטיחות)."
               continue
             fi
 
-            # נבנה תיקייה נקייה לכל PR
             workdir="$(mktemp -d)"
             git init -q "$workdir"
             cd "$workdir"
             git remote add origin "https://github.com/${{ github.repository }}.git"
             git fetch -q origin "$headRef" "$baseRef"
-            git checkout -q -b "$headRef" "origin/$headRef"
+            git checkout -q -b prs-head "origin/$headRef"
 
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -93,14 +84,14 @@ jobs:
             set -e
 
             if [ $mstatus -eq 0 ]; then
-              echo "No conflicts to reproduce. Aborting merge."
+              echo "No conflicts to reproduce."
               git merge --abort || true
             else
-              # נקי סימוני קונפליקט רק בקבצים בעייתיים
               UNMERGED=$(git diff --name-only --diff-filter=U || true)
               if [ -n "$UNMERGED" ]; then
                 echo "$UNMERGED" | while read -r f; do
                   [ -z "$f" ] && continue
+                  # מוחק רק את השורות של הסימונים
                   sed -i '/^<<<<<<< .*$/d;/^=======$/d;/^>>>>>>> .*$/d' "$f"
                   git add -- "$f"
                   echo "Cleaned: $f"
@@ -117,32 +108,27 @@ jobs:
             rm -rf "$workdir"
           done
 
-      - name: Try auto-merge cleaned PRs
+      - name: Try auto-merge
         uses: actions/github-script@v7
         with:
           script: |
-            const prs = JSON.parse(`${{ toJson(steps.prs.outputs.prs) }}`);
-            const method = `${{ steps.prs.outputs.merge_method }}`;
+            const prs = JSON.parse(`${{ toJson(steps.pick.outputs.prs) }}`);
+            const method = `${{ steps.pick.outputs.merge_method }}`;
             for (const p of prs) {
               try {
-                // נבדוק סטטוס מיזוג
                 const { data } = await github.pulls.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: p.number
+                  owner: context.repo.owner, repo: context.repo.repo, pull_number: p.number
                 });
                 if (!data.mergeable) {
-                  core.info(`PR #${p.number} not mergeable yet (${data.mergeable_state}); skipping.`);
+                  core.info(`PR #${p.number} not mergeable (${data.mergeable_state})`);
                   continue;
                 }
                 await github.pulls.merge({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: p.number,
-                  merge_method: method
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  pull_number: p.number, merge_method: method
                 });
-                core.info(`Merged PR #${p.number} with ${method}.`);
+                core.info(`Merged PR #${p.number} (${method}).`);
               } catch (e) {
-                core.info(`Could not merge PR #${p.number}: ${e.message}`);
+                core.info(`Skip PR #${p.number}: ${e.message}`);
               }
             }
