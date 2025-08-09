@@ -31,6 +31,11 @@ export interface AIHistoryEntry {
   prompt: string;
   response: AIResponse;
 }
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 export interface RewardItem {
   id: string;
   name: string;
