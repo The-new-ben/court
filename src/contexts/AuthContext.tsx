@@ -2,13 +2,16 @@ import React, { createContext, useContext, useState } from 'react';
 // TODO: Restore authentication once UI work is complete
 // import { authService } from '../services/authService';
 
-interface User {
+interface Client {
   email: string;
   role: string;
+  points: number;
+  referralCode: string;
+  referrerId?: string | null;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: Client | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string, name: string) => Promise<void>;
@@ -21,6 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Temporary stubbed user; replace with real auth logic later
   const [user] = useState<User | null>({ email: 'dummy@example.com', role: 'guest' });
   const [isLoading] = useState(false);
+  const [user, setUser] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const login = async () => {};
   const register = async () => {};

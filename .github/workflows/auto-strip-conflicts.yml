@@ -1,0 +1,143 @@
+name: Auto clean conflict markers & merge PRs
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      merge_method:
+        description: "merge | squash | rebase"
+        required: true
+        default: "merge"
+  schedule:
+    - cron: "*/15 * * * *" # כל 15 דקות
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-clean-and-merge
+  cancel-in-progress: false
+
+jobs:
+  clean_and_merge:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Pick PRs (event=PR → אחד; schedule/dispatch → כולם)
+        id: pick
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const method = context.eventName === 'workflow_dispatch'
+              ? core.getInput('merge_method')
+              : 'merge';
+
+            let prs = [];
+            if (context.eventName === 'pull_request_target') {
+              prs = [context.payload.pull_request];
+            } else {
+              prs = await github.paginate(
+                github.rest.pulls.list,
+                { owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100 }
+              );
+            }
+
+            core.setOutput('merge_method', method);
+            core.setOutput('prs', JSON.stringify(prs.map(p => ({
+              number: p.number,
+              headRef: p.head.ref,
+              headRepo: p.head.repo.full_name,
+              baseRef: p.base.ref,
+              isFork: p.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`
+            }))));
+
+      - name: Clean conflict markers (push using token)
+        if: ${{ steps.pick.outputs.prs != '' }}
+        env:
+          PRS_JSON: ${{ steps.pick.outputs.prs }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "$PRS_JSON" | jq -c '.[]' | while read -r pr; do
+            num=$(echo "$pr" | jq -r '.number')
+            headRef=$(echo "$pr" | jq -r '.headRef')
+            headRepo=$(echo "$pr" | jq -r '.headRepo')
+            baseRef=$(echo "$pr" | jq -r '.baseRef')
+            isFork=$(echo "$pr" | jq -r '.isFork')
+
+            echo "=== PR #$num  ($headRepo:$headRef -> $baseRef)"
+
+            if [ "$isFork" = "true" ]; then
+              echo "Fork PR — skipping push (בטיחות)."
+              continue
+            fi
+
+            workdir="$(mktemp -d)"
+            git init -q "$workdir"
+            cd "$workdir"
+
+            # remote עם טוקן כדי ש-push יעבוד
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+            git fetch -q origin "$headRef" "$baseRef"
+            git checkout -q -b prs-head "origin/$headRef"
+
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            set +e
+            git merge --no-commit --no-ff "origin/$baseRef"
+            mstatus=$?
+            set -e
+
+            if [ $mstatus -eq 0 ]; then
+              echo "No conflicts to reproduce."
+              git merge --abort || true
+            else
+              UNMERGED=$(git diff --name-only --diff-filter=U || true)
+              if [ -n "$UNMERGED" ]; then
+                echo "$UNMERGED" | while read -r f; do
+                  [ -z "$f" ] && continue
+                  sed -i '/^<<<<<<< .*$/d;/^=======$/d;/^>>>>>>> .*$/d' "$f"
+                  git add -- "$f"
+                  echo "Cleaned: $f"
+                done
+                git commit -m "chore: strip conflict markers (auto)"
+                git push -q origin "HEAD:$headRef"
+              else
+                echo "No unmerged files after merge attempt."
+                git merge --abort || true
+              fi
+            fi
+
+            cd - >/dev/null
+            rm -rf "$workdir"
+          done
+
+      - name: Auto-merge cleaned PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse(`${{ toJson(steps.pick.outputs.prs) }}`);
+            const method = `${{ steps.pick.outputs.merge_method }}`;
+            for (const p of prs) {
+              try {
+                const { data } = await github.rest.pulls.get({
+                  owner: context.repo.owner, repo: context.repo.repo, pull_number: p.number
+                });
+                if (!data.mergeable) {
+                  core.info(`PR #${p.number} not mergeable (${data.mergeable_state})`);
+                  continue;
+                }
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  pull_number: p.number, merge_method: method
+                });
+                core.info(`Merged PR #${p.number} (${method}).`);
+              } catch (e) {
+                core.info(`Skip PR #${p.number}: ${e.message}`);
+              }
+            }
