@@ -31,6 +31,7 @@ jobs:
         id: pick
         uses: actions/github-script@v7
         with:
+          result-encoding: string
           script: |
             const method = context.eventName === 'workflow_dispatch'
               ? core.getInput('merge_method')
@@ -47,21 +48,21 @@ jobs:
             }
 
             core.setOutput('merge_method', method);
-            core.setOutput('prs', JSON.stringify(prs.map(p => ({
+            return JSON.stringify(prs.map(p => ({
               number: p.number,
               headRef: p.head.ref,
               headRepo: p.head.repo.full_name,
               baseRef: p.base.ref,
               isFork: p.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`
-            }))));
+            })));
 
       - name: Clean conflict markers (push using token)
-        if: ${{ steps.pick.outputs.prs != '' }}
         env:
-          PRS_JSON: ${{ steps.pick.outputs.prs }}
+          PRS_JSON: ${{ steps.pick.outputs.result }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          command -v jq >/dev/null 2>&1 || { sudo apt-get update -y && sudo apt-get install -y jq; }
           echo "$PRS_JSON" | jq -c '.[]' | while read -r pr; do
             num=$(echo "$pr" | jq -r '.number')
             headRef=$(echo "$pr" | jq -r '.headRef')
@@ -119,10 +120,13 @@ jobs:
 
       - name: Auto-merge cleaned PRs
         uses: actions/github-script@v7
+        env:
+          PRS_JSON: ${{ steps.pick.outputs.result }}
+          MERGE_METHOD: ${{ steps.pick.outputs.merge_method }}
         with:
           script: |
-            const prs = JSON.parse(`${{ toJson(steps.pick.outputs.prs) }}`);
-            const method = `${{ steps.pick.outputs.merge_method }}`;
+            const prs = JSON.parse(process.env.PRS_JSON || "[]");
+            const method = process.env.MERGE_METHOD || "merge";
             for (const p of prs) {
               try {
                 const { data } = await github.rest.pulls.get({

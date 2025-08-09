@@ -42,3 +42,27 @@ export const getAiResponse = async (
     return { text: "An unknown error occurred while contacting the AI." };
   }
 };
+
+export const suggestPrecedents = async (caseFacts: string): Promise<AIResponse> => {
+  const prompt = `Analyze the following case facts and suggest relevant legal precedents and statutes with brief explanations.\n\n${caseFacts}`;
+
+  try {
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { tools: [{ googleSearch: {} }] },
+    });
+
+    const text = response.text;
+    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+    const sources = groundingMetadata?.groundingChunks as GroundingChunk[] | undefined;
+
+    return { text, sources };
+  } catch (error) {
+    console.error('Error calling Gemini API:', error);
+    if (error instanceof Error) {
+      return { text: `An error occurred: ${error.message}` };
+    }
+    return { text: 'An unknown error occurred while contacting the AI.' };
+  }
+};

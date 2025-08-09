@@ -1,6 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const { subscriptionPackages, clientSubscriptions } = require('../db');
+const { getErrorMessage } = require('../services/errorMessages');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.post('/subscribe', authMiddleware, (req, res) => {
   const { packageId } = req.body;
   const pkg = subscriptionPackages.find(p => p.id === packageId);
   if (!pkg) {
-    return res.status(404).json({ error: 'חבילה לא נמצאה' });
+    return res.status(404).json({ error: getErrorMessage('PACKAGE_NOT_FOUND', req.headers['accept-language']) });
   }
 
   const existing = clientSubscriptions.find(s => s.clientId === req.user.userId);
