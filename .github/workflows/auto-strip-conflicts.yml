@@ -1,0 +1,56 @@
+name: Auto strip conflict markers on PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  strip:
+    # בטוח: עובד רק כשענף ה-PR שייך לאותו ריפו (לא fork)
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Reproduce conflicts by merging base into PR
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin ${{ github.base_ref }} --depth=1
+
+          set +e
+          git merge --no-commit --no-ff origin/${{ github.base_ref }}
+          MERGE_STATUS=$?
+          set -e
+
+          # אם אין קונפליקטים — לצאת יפה
+          if [ $MERGE_STATUS -eq 0 ]; then
+            git merge --abort || true
+            echo "No conflicts; nothing to strip."
+            exit 0
+          fi
+
+          # קבצים בקונפליקט
+          UNMERGED=$(git diff --name-only --diff-filter=U || true)
+          if [ -z "$UNMERGED" ]; then
+            git merge --abort || true
+            echo "No unmerged files found."
+            exit 0
+          fi
+
+          # מחיקה גסה של המארקרים
+          echo "$UNMERGED" | while read -r f; do
+            [ -z "$f" ] && continue
+            sed -i '/^<<<<<<< .*$/d;/^=======$/d;/^>>>>>>> .*$/d' "$f"
+            git add -- "$f"
+          done
+
+          git commit -m "chore: strip conflict markers automatically"
+          git push origin HEAD:${{ github.head_ref }}
