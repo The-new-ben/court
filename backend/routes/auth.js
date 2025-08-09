@@ -8,12 +8,19 @@ const { users } = require('../middleware/auth');
 const router = express.Router();
 
 // Rate limiting for auth endpoints
+const WINDOW_MS = parseInt(process.env.AUTH_WINDOW_MS, 10) || 15 * 60 * 1000;
+const MAX_REQUESTS = parseInt(process.env.AUTH_MAX_REQUESTS, 10) || 10;
+const limitMessage = `יותר מדי ניסיונות התחברות, נסה שוב בעוד ${Math.floor(WINDOW_MS / 60000)} דקות`;
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: 'יותר מדי ניסיונות התחברות, נסה שוב בעוד 15 דקות',
+  windowMs: WINDOW_MS,
+  max: MAX_REQUESTS,
+  message: limitMessage,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    console.warn(`Rate limit exceeded for IP ${req.ip} on ${req.originalUrl}`);
+    res.status(429).json({ error: limitMessage });
+  },
 });
 
 // Registration endpoint
