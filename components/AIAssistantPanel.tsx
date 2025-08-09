@@ -1,3 +1,8 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import type { AIHistoryEntry, AIResponse } from '../types';
+import { Spinner } from '../Spinner';
+import { SearchIcon } from '../SearchIcon';
 import React, { useState, useRef, useEffect } from "react";
 import type { AIHistoryEntry, AIResponse } from "../types";
 import { Spinner } from "./common/Spinner";
