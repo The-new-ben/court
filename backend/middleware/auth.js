@@ -1,14 +1,19 @@
 const jwt = require('jsonwebtoken');
 
-// In-memory user storage (replace with database in production)
-const users = [];
-
 function authMiddleware(req, res, next) {
   const token = req.cookies?.token;
 
   if (!token) {
     return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
   }
+
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
+  }
+
+  const token = authHeader.substring(7);
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
@@ -35,4 +40,4 @@ function requireRole(roles) {
   };
 }
 
-module.exports = { authMiddleware, requireRole, users };
+module.exports = { authMiddleware, requireRole };

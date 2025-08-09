@@ -8,6 +8,8 @@ interface Client {
   history: string[];
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 export default function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +17,11 @@ export default function ClientList() {
   useEffect(() => {
     fetch('http://localhost:5001/api/clients', {
       credentials: 'include'
+    const token = localStorage.getItem('hypercourt_token');
+    fetch(`${API_URL}/clients`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     })
       .then(async res => {
         if (!res.ok) {
