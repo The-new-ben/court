@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
+const { users, VALID_ROLES } = require('../middleware/auth');
 const { users } = require('../middleware/auth');
 const { getErrorMessage } = require('../services/errorMessages');
 const User = require('../models/User');
@@ -37,6 +38,10 @@ router.post(
   '/register',
   authLimiter,
   [
+    body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
+    body('password').isLength({ min: 8 }).withMessage('סיסמה חייבת להכיל לפחות 8 תווים'),
+    body('name').trim().isLength({ min: 2 }).withMessage('שם חייב להכיל לפחות 2 תווים'),
+    body('role').isIn(VALID_ROLES).withMessage('תפקיד לא תקין')
     body('email').isEmail().withMessage((value, { req }) =>
       getErrorMessage('INVALID_EMAIL', req.headers['accept-language'])
     ),
