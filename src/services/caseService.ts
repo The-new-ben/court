@@ -8,6 +8,9 @@ export interface Case {
   timestamp: string;
   stage: CaseStage;
   history: CaseHistoryEntry[];
+  duration?: number;
+  outcome?: string;
+  complianceViolations?: number;
 }
 
 const DB_NAME = 'courtDBv6';

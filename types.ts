@@ -31,3 +31,14 @@ export interface AIHistoryEntry {
   prompt: string;
   response: AIResponse;
 }
+export interface RewardItem {
+  id: string;
+  name: string;
+  cost: number;
+}
+
+export interface RewardRedemption {
+  userId: string;
+  rewardId: string;
+  timestamp: string;
+}
