@@ -1,8 +1,8 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
+const connect = require('../db');
 const { getUserByEmail, getUserByReferralCode, insertUser } = require('../middleware/auth');
 const { users, VALID_ROLES } = require('../middleware/auth');
 const { users } = require('../middleware/auth');
@@ -87,6 +87,7 @@ router.post(
       }
 
       const { email, password, name, role } = req.body;
+      await connect();
 
       const existingUser = await getUserByEmail(email);
       // Check if user already exists
@@ -94,6 +95,7 @@ router.post(
       if (existingUser) {
         return res.status(400).json({ error: getErrorMessage('USER_EXISTS', req.headers['accept-language']) });
       }
+      const user = await User.create({ email, password, name, role });
 
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -137,7 +139,6 @@ router.post(
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
       console.log(`New user registered: ${email} (${role})`);
 
       res.cookie('token', token, {
@@ -195,11 +196,16 @@ router.post(
       }
 
       const { email, password } = req.body;
+      await connect();
 
       const user = await getUserByEmail(email);
       // Find user
       const user = await User.findOne({ email });
       if (!user) {
+        return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
+      }
+      const isValidPassword = await user.comparePassword(password);
+      if (!isValidPassword) {
         return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
 
@@ -221,7 +227,6 @@ router.post(
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
       console.log(`User logged in: ${email} (${user.role})`);
 
       res.cookie('token', token, {
