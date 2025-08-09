@@ -1,0 +1,23 @@
+{
+  "app.loading": "טוען...",
+  "header.title": "HyperCourt",
+  "header.subtitle": "מערכת משפטית חכמה",
+  "header.welcome": "ברוך הבא, {{email}}",
+  "header.roles.admin": "מנהל מערכת",
+  "header.roles.lawyer": "עורך/ת דין",
+  "header.roles.judge": "שופט/ת",
+  "header.roles.plaintiff": "תובע/ת",
+  "header.logout": "התנתק",
+  "header.profile": "פרופיל",
+  "main.processing": "מעבד...",
+  "main.tab.cases": "דיונים משפטיים",
+  "main.tab.admin": "ניהול מערכת",
+  "main.tab.profile": "הגדרות פרופיל",
+  "main.search.placeholder": "חיפוש בדיונים...",
+  "main.clearAll": "נקה הכל",
+  "main.confirmClear": "האם למחוק את כל הדיונים לצמיתות?",
+  "profile.language": "בחירת שפה",
+  "profile.templates": "תבניות טפסים משפטיים",
+  "profile.templates.powerOfAttorney": "ייפוי כוח",
+  "profile.templates.complaint": "כתב תביעה"
+}
