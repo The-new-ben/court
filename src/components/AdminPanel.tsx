@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Database, Settings, Activity, Shield, AlertTriangle } from 'lucide-react';
+import { getAllCases, getCaseCount, clearCases } from '../utils/db';
+import { useToast } from './Toast';
+
+interface LogFilters {
+  user: string;
+  action: string;
+}
+
+interface AuditLog {
+  user: string;
+  action: string;
+  timestamp: string;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export default function AdminPanel() {
   const [stats, setStats] = useState({
@@ -8,16 +23,23 @@ export default function AdminPanel() {
     systemHealth: 'תקין',
     lastBackup: 'לא זמין'
   });
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [logFilters, setLogFilters] = useState<LogFilters>({ user: '', action: '' });
+  const toast = useToast();
 
   useEffect(() => {
-    // Load admin statistics
     loadStats();
+    loadLogs();
   }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [logFilters]);
 
   const loadStats = async () => {
     try {
       // Check backend health
-      const response = await fetch('http://localhost:5001/api/health');
+      const response = await fetch(`${API_URL}/health`);
       if (response.ok) {
         const data = await response.json();
         setStats(prev => ({
@@ -26,31 +48,16 @@ export default function AdminPanel() {
           systemHealth: 'תקין'
         }));
       }
-    } catch (error) {
+    } catch {
       setStats(prev => ({
         ...prev,
         systemHealth: 'שגיאה בחיבור'
       }));
     }
 
-    // Get cases count from IndexedDB
     try {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('courtDBv6', 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
-      const transaction = db.transaction('cases', 'readonly');
-      const store = transaction.objectStore('cases');
-      const countRequest = store.count();
-      
-      countRequest.onsuccess = () => {
-        setStats(prev => ({
-          ...prev,
-          totalCases: countRequest.result
-        }));
-      };
+      const totalCases = await getCaseCount();
+      setStats(prev => ({ ...prev, totalCases }));
     } catch (error) {
       console.warn('Could not get cases count:', error);
     }
@@ -58,56 +65,57 @@ export default function AdminPanel() {
 
   const exportData = async () => {
     try {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('courtDBv6', 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
-      const transaction = db.transaction('cases', 'readonly');
-      const store = transaction.objectStore('cases');
-      const request = store.getAll();
-      
-      request.onsuccess = () => {
-        const data = {
-          exportDate: new Date().toISOString(),
-          cases: request.result,
-          totalCases: request.result.length
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { 
-          type: 'application/json' 
-        });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `hypercourt_backup_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-        
-        alert('גיבוי הנתונים הושלם בהצלחה!');
+      const cases = await getAllCases();
+      const data = {
+        exportDate: new Date().toISOString(),
+        cases,
+        totalCases: cases.length
       };
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json'
+      });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `hypercourt_backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast('גיבוי הנתונים הושלם בהצלחה!');
     } catch (error) {
-      alert('שגיאה ביצירת גיבוי: ' + error);
+      toast('שגיאה ביצירת גיבוי: ' + error);
+    }
+  };
+
+  const loadLogs = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (logFilters.user) params.append('user', logFilters.user);
+      if (logFilters.action) params.append('action', logFilters.action);
+      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
+        credentials: 'include'
+      const token = localStorage.getItem('hypercourt_token');
+        const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data);
+      } else {
+        setLogs([]);
+      }
+    } catch (error) {
+      console.warn('Could not load audit logs:', error);
+      setLogs([]);
     }
   };
 
   const clearSystemData = async () => {
     if (confirm('האם אתה בטוח שברצונך למחוק את כל נתוני המערכת? פעולה זו בלתי הפיכה!')) {
       try {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open('courtDBv6', 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-
-        const transaction = db.transaction('cases', 'readwrite');
-        const store = transaction.objectStore('cases');
-        store.clear();
-        
-        alert('כל נתוני המערכת נמחקו בהצלחה!');
+        await clearCases();
+        toast('כל נתוני המערכת נמחקו בהצלחה!');
         loadStats();
       } catch (error) {
-        alert('שגיאה במחיקת נתונים: ' + error);
+        toast('שגיאה במחיקת נתונים: ' + error);
       }
     }
   };
@@ -203,7 +211,7 @@ export default function AdminPanel() {
 
             <button
               className="flex items-center gap-3 bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors"
-              onClick={() => window.open('http://localhost:5001/api/health', '_blank')}
+              onClick={() => window.open(`${API_URL}/health`, '_blank')}
             >
               <Settings size={20} />
               <div className="text-right">
@@ -222,6 +230,47 @@ export default function AdminPanel() {
             <p>• סביבת הפעלה: {import.meta.env.PROD ? 'Production' : 'Development'}</p>
             <p>• בסיס נתונים: IndexedDB (מקומי)</p>
             <p>• שרת אימות: Node.js + Express</p>
+          </div>
+        </div>
+
+        {/* Audit Logs */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">יומן פעולות</h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="משתמש"
+              className="border rounded p-2 flex-1"
+              value={logFilters.user}
+              onChange={e => setLogFilters(prev => ({ ...prev, user: e.target.value }))}
+            />
+            <input
+              type="text"
+              placeholder="פעולה"
+              className="border rounded p-2 flex-1"
+              value={logFilters.action}
+              onChange={e => setLogFilters(prev => ({ ...prev, action: e.target.value }))}
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">משתמש</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">פעולה</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">זמן</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logs.map((log, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.user}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.action}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{new Date(log.timestamp).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

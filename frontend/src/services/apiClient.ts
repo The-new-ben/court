@@ -1,6 +1,9 @@
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://api.hypercourt.com' 
+const API_BASE_URL = import.meta.env.PROD
+  ? 'https://api.hypercourt.com'
   : 'http://localhost:5001';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://api.hypercourt.com/api' : 'http://localhost:5001/api');
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -8,29 +11,14 @@ interface ApiResponse<T = any> {
   details?: string[];
 }
 
-interface TokenResponse {
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-  };
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-  };
-}
-
 class ApiClient {
   private baseURL: string;
-  private accessToken: string | null = null;
-  private refreshToken: string | null = null;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.loadTokensFromStorage();
   }
 
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   private loadTokensFromStorage() {
     this.accessToken = localStorage.getItem('hypercourt_access_token');
     this.refreshToken = localStorage.getItem('hypercourt_refresh_token');
@@ -57,7 +45,7 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+        const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,96 +73,61 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
-    }
-
     try {
-      let response = await fetch(url, {
+      const response = await fetch(url, {
         ...options,
         headers,
+        credentials: 'include',
       });
 
-      // If token expired, try to refresh
-      if (response.status === 401 && this.refreshToken) {
-        const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          headers.Authorization = `Bearer ${this.accessToken}`;
-          response = await fetch(url, {
-            ...options,
-            headers,
-          });
-        }
-      }
-
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        return {
-          error: data.error || 'שגיאה לא צפויה',
-          details: data.details,
-        };
+        return { error: data.error || 'שגיאה לא צפויה', details: data.details };
       }
 
       return { data };
     } catch (error) {
       console.error('API request failed:', error);
-      return {
-        error: 'שגיאה בחיבור לשרת',
-      };
+      return { error: 'שגיאה בחיבור לשרת' };
     }
   }
 
-  // Auth methods
   async register(userData: {
     email: string;
     password: string;
     name: string;
     role?: string;
+  }): Promise<ApiResponse<{ user?: any }>> {
+    return this.makeRequest('/api/auth/register', {
   }): Promise<ApiResponse<TokenResponse>> {
-    const response = await this.makeRequest<TokenResponse>('/api/auth/register', {
+      const response = await this.makeRequest<TokenResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
-
-    if (response.data) {
-      this.saveTokensToStorage(response.data.tokens);
-      if (response.data.user) {
-        localStorage.setItem('hypercourt_user', JSON.stringify(response.data.user));
-      }
-    }
-
-    return response;
   }
 
   async login(credentials: {
     email: string;
     password: string;
+  }): Promise<ApiResponse<{ user?: any }>> {
+    return this.makeRequest('/api/auth/login', {
   }): Promise<ApiResponse<TokenResponse>> {
-    const response = await this.makeRequest<TokenResponse>('/api/auth/login', {
+      const response = await this.makeRequest<TokenResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
-
-    if (response.data) {
-      this.saveTokensToStorage(response.data.tokens);
-      if (response.data.user) {
-        localStorage.setItem('hypercourt_user', JSON.stringify(response.data.user));
-      }
-    }
-
-    return response;
   }
 
   async logout(): Promise<void> {
+    await this.makeRequest('/api/auth/logout', { method: 'POST' });
     if (this.refreshToken) {
-      await this.makeRequest('/api/auth/logout', {
+        await this.makeRequest('/auth/logout', {
         method: 'POST',
         body: JSON.stringify({ refreshToken: this.refreshToken }),
       });
@@ -183,15 +136,13 @@ class ApiClient {
   }
 
   async getProfile(): Promise<ApiResponse<{ user: any }>> {
-    return this.makeRequest('/api/auth/profile');
+    return this.makeRequest('/auth/profile');
   }
 
-  // Health check
   async healthCheck(): Promise<ApiResponse<any>> {
     return this.makeRequest('/health');
   }
 
-  // Generic methods for future endpoints
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.makeRequest<T>(endpoint, { method: 'GET' });
   }
@@ -202,28 +153,7 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
-
-  async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.makeRequest<T>(endpoint, { method: 'DELETE' });
-  }
-
-  // Getters
-  get isAuthenticated(): boolean {
-    return !!this.accessToken;
-  }
-
-  get currentAccessToken(): string | null {
-    return this.accessToken;
-  }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient(API_BASE_URL);
-export default apiClient;
+

@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:5001/api/auth';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const AUTH_URL = `${API_URL}/auth`;
 
 // Enhanced request handling with timeout and better error messages
 const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 10000) => {
@@ -8,6 +9,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 100
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: 'include',
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -49,7 +51,7 @@ const handleApiError = (data: any, response: Response) => {
 export const authService = {
   async login(email: string, password: string) {
     try {
-      const response = await fetchWithTimeout(`${API_URL}/login`, {
+      const response = await fetchWithTimeout(`${AUTH_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -68,7 +70,7 @@ export const authService = {
 
   async register(email: string, password: string, role: string, name: string) {
     try {
-      const response = await fetchWithTimeout(`${API_URL}/register`, {
+      const response = await fetchWithTimeout(`${AUTH_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role, name })
@@ -87,23 +89,28 @@ export const authService = {
 
   async getProfile() {
     try {
-      const token = localStorage.getItem('hypercourt_token');
       const response = await fetchWithTimeout(`${API_URL.replace('/auth', '')}/profile`, {
+      const token = localStorage.getItem('hypercourt_token');
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
-      
+
       const data = await response.json();
       if (!response.ok) {
         handleApiError(data, response);
       }
-      
+
       return data;
     } catch (error) {
       throw error;
     }
+  },
+
+  async logout() {
+    await fetchWithTimeout(`${API_URL}/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };
