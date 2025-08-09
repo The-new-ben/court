@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { users } = require('../middleware/auth');
+const { getErrorMessage } = require('../services/errorMessages');
 
 const router = express.Router();
 
@@ -11,27 +12,38 @@ const router = express.Router();
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
-  message: 'יותר מדי ניסיונות התחברות, נסה שוב בעוד 15 דקות',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ error: getErrorMessage('TOO_MANY_ATTEMPTS', req.headers['accept-language']) });
+  }
 });
 
 // Registration endpoint
-router.post('/register', 
+router.post(
+  '/register',
   authLimiter,
   [
-    body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
-    body('password').isLength({ min: 8 }).withMessage('סיסמה חייבת להכיל לפחות 8 תווים'),
-    body('name').trim().isLength({ min: 2 }).withMessage('שם חייב להכיל לפחות 2 תווים'),
-    body('role').isIn(['admin', 'lawyer', 'plaintiff', 'judge']).withMessage('תפקיד לא תקין')
+    body('email').isEmail().withMessage((value, { req }) =>
+      getErrorMessage('INVALID_EMAIL', req.headers['accept-language'])
+    ),
+    body('password').isLength({ min: 8 }).withMessage((value, { req }) =>
+      getErrorMessage('PASSWORD_TOO_SHORT', req.headers['accept-language'])
+    ),
+    body('name').trim().isLength({ min: 2 }).withMessage((value, { req }) =>
+      getErrorMessage('NAME_TOO_SHORT', req.headers['accept-language'])
+    ),
+    body('role').isIn(['admin', 'lawyer', 'plaintiff', 'judge']).withMessage((value, { req }) =>
+      getErrorMessage('INVALID_ROLE', req.headers['accept-language'])
+    )
   ],
   async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          error: 'נתונים לא תקינים', 
-          details: errors.array() 
+        return res.status(400).json({
+          error: getErrorMessage('INVALID_DATA', req.headers['accept-language']),
+          details: errors.array()
         });
       }
 
@@ -40,7 +52,7 @@ router.post('/register',
       // Check if user already exists
       const existingUser = users.find(u => u.email === email);
       if (existingUser) {
-        return res.status(400).json({ error: 'משתמש עם אימייל זה כבר קיים' });
+        return res.status(400).json({ error: getErrorMessage('USER_EXISTS', req.headers['accept-language']) });
       }
 
       // Hash password
@@ -90,28 +102,32 @@ router.post('/register',
           referrerId: user.referrerId
         }
       });
-
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ error: 'שגיאה ביצירת משתמש' });
+      res.status(500).json({ error: getErrorMessage('USER_CREATION_ERROR', req.headers['accept-language']) });
     }
   }
 );
 
 // Login endpoint
-router.post('/login',
+router.post(
+  '/login',
   authLimiter,
   [
-    body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
-    body('password').exists().withMessage('סיסמה נדרשת')
+    body('email').isEmail().withMessage((value, { req }) =>
+      getErrorMessage('INVALID_EMAIL', req.headers['accept-language'])
+    ),
+    body('password').exists().withMessage((value, { req }) =>
+      getErrorMessage('PASSWORD_REQUIRED', req.headers['accept-language'])
+    )
   ],
   async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          error: 'נתונים לא תקינים', 
-          details: errors.array() 
+        return res.status(400).json({
+          error: getErrorMessage('INVALID_DATA', req.headers['accept-language']),
+          details: errors.array()
         });
       }
 
@@ -120,13 +136,13 @@ router.post('/login',
       // Find user
       const user = users.find(u => u.email === email);
       if (!user) {
-        return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
+        return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
 
       // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
+        return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
 
       // Generate JWT
@@ -151,10 +167,9 @@ router.post('/login',
           referrerId: user.referrerId
         }
       });
-
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ error: 'שגיאה בהתחברות' });
+      res.status(500).json({ error: getErrorMessage('LOGIN_ERROR', req.headers['accept-language']) });
     }
   }
 );
