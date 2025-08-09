@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 function AppContent() {
-  const { isLoading } = useAuth();
   const { user, isLoading } = useAuth();
   const { t } = useLanguage();
 
