@@ -3,6 +3,11 @@ const connect = require('../db');
 const User = require('../models/User');
 
 async function authMiddleware(req, res, next) {
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
@@ -56,6 +61,53 @@ function requireRole(roles) {
   };
 }
 
+async function getUserByEmail(email) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,email,password,name,role,points,referralCode,referrerId,createdAt')
+    .eq('email', email)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+}
+
+async function getUserByReferralCode(code) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,email,password,name,role,points,referralCode,referrerId,createdAt')
+    .eq('referralCode', code)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+}
+
+async function insertUser(user) {
+  const { data, error } = await supabase
+    .from('users')
+    .insert(user)
+    .select('id,email,name,role,points,referralCode,referrerId,createdAt')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function getUserCount() {
+  const { count, error } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true });
+  if (error) throw error;
+  return count;
+}
+
+module.exports = {
+  authMiddleware,
+  requireRole,
+  getUserByEmail,
+  getUserByReferralCode,
+  insertUser,
+  getUserCount,
+  supabase
+};
 module.exports = { authMiddleware, requireRole, users, VALID_ROLES };
 module.exports = { authMiddleware, requireRole };
 module.exports = { authMiddleware, requireRole };
