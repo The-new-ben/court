@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import Logo from './Logo';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -10,10 +11,7 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-blue-800">{t('header.title')}</h1>
-          <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
-        </div>
+        <Logo />
         
         <div className="flex items-center gap-4">
           <div className="text-right">
