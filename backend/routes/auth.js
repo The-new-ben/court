@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { users } = require('../middleware/auth');
 const { getErrorMessage } = require('../services/errorMessages');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -12,6 +13,9 @@ const router = express.Router();
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'יותר מדי ניסיונות התחברות, נסה שוב בעוד 15 דקות',
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -43,6 +47,7 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({
           error: getErrorMessage('INVALID_DATA', req.headers['accept-language']),
+          error: 'נתונים לא תקינים',
           details: errors.array()
         });
       }
@@ -50,7 +55,7 @@ router.post(
       const { email, password, name, role } = req.body;
 
       // Check if user already exists
-      const existingUser = users.find(u => u.email === email);
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ error: getErrorMessage('USER_EXISTS', req.headers['accept-language']) });
       }
@@ -63,22 +68,17 @@ router.post(
       let referralCode;
       do {
         referralCode = Math.random().toString(36).substring(2, 8);
-      } while (users.find(u => u.referralCode === referralCode));
+      } while (await User.findOne({ referralCode }));
 
-      // Create user with referral fields
-      const user = {
-        id: Date.now().toString(),
+      // Create user
+      const user = new User({
         email,
         password: hashedPassword,
         name,
         role,
-        createdAt: new Date().toISOString(),
-        points: 0,
-        referralCode,
-        referrerId: null
-      };
-
-      users.push(user);
+        referralCode
+      });
+      await user.save();
 
       // Generate JWT
       const token = jwt.sign(
@@ -92,15 +92,7 @@ router.post(
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          points: user.points,
-          referralCode: user.referralCode,
-          referrerId: user.referrerId
-        }
+        user: user.toJSON()
       });
     } catch (error) {
       console.error('Registration error:', error);
@@ -127,6 +119,7 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({
           error: getErrorMessage('INVALID_DATA', req.headers['accept-language']),
+          error: 'נתונים לא תקינים',
           details: errors.array()
         });
       }
@@ -134,7 +127,7 @@ router.post(
       const { email, password } = req.body;
 
       // Find user
-      const user = users.find(u => u.email === email);
+      const user = await User.findOne({ email });
       if (!user) {
         return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
@@ -157,15 +150,7 @@ router.post(
       res.json({
         message: 'התחברת בהצלחה',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          points: user.points,
-          referralCode: user.referralCode,
-          referrerId: user.referrerId
-        }
+        user: user.toJSON()
       });
     } catch (error) {
       console.error('Login error:', error);
