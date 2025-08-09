@@ -12,6 +12,8 @@ interface AuditLog {
   timestamp: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 export default function AdminPanel() {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -35,7 +37,7 @@ export default function AdminPanel() {
   const loadStats = async () => {
     try {
       // Check backend health
-      const response = await fetch('http://localhost:5001/api/health');
+      const response = await fetch(`${API_URL}/health`);
       if (response.ok) {
         const data = await response.json();
         setStats(prev => ({
@@ -115,7 +117,7 @@ export default function AdminPanel() {
       if (logFilters.user) params.append('user', logFilters.user);
       if (logFilters.action) params.append('action', logFilters.action);
       const token = localStorage.getItem('hypercourt_token');
-      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
+        const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (response.ok) {
@@ -242,7 +244,7 @@ export default function AdminPanel() {
 
             <button
               className="flex items-center gap-3 bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors"
-              onClick={() => window.open('http://localhost:5001/api/health', '_blank')}
+              onClick={() => window.open(`${API_URL}/health`, '_blank')}
             >
               <Settings size={20} />
               <div className="text-right">
