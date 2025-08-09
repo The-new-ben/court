@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Database, Settings, Activity, Shield, AlertTriangle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 import { adminService } from '../services/adminService';
 import { getAllCases, getCaseCount, clearCases } from '../utils/db';
 import { useToast } from './Toast';
@@ -43,6 +44,7 @@ export default function AdminPanel() {
   const loadStats = async () => {
     try {
       // Check backend health
+        const response = await fetch(`${API_BASE_URL}/health`);
       const response = await fetch(`${API_URL}/health`);
       if (response.ok) {
         const data = await response.json();
@@ -115,6 +117,7 @@ export default function AdminPanel() {
       const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
         credentials: 'include'
       const token = localStorage.getItem('hypercourt_token');
+        const response = await fetch(`${API_BASE_URL}/logs?${params.toString()}`, {
         const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -233,6 +236,7 @@ export default function AdminPanel() {
 
             <button
               className="flex items-center gap-3 bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={() => window.open(`${API_BASE_URL}/health`, '_blank')}
               onClick={() => window.open(`${API_URL}/health`, '_blank')}
             >
               <Settings size={20} />
