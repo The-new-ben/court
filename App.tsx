@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Header } from "./components/Header";
+import Header from "./src/components/Header";
 import { CaseInfoPanel } from "./components/CaseInfoPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { UserInputPanel } from "./components/UserInputPanel";
 import { AIAssistantPanel } from "./components/AIAssistantPanel";
 import { VideoPanel } from "./components/VideoPanel";
 import { AudiencePanel } from "./components/AudiencePanel";
+import VerdictVote from "./src/components/viewer/VerdictVote";
 import type {
   TranscriptEntry,
   Role,
@@ -14,18 +15,6 @@ import type {
 } from "./types";
 import { getAiResponse } from "./services/geminiService";
 import { demoScript, DemoActionType } from "./services/demoScript";
-
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Header } from './components/Header';
-import { CaseInfoPanel } from './components/CaseInfoPanel';
-import { TranscriptPanel } from './components/TranscriptPanel';
-import { UserInputPanel } from './components/UserInputPanel';
-import { AIAssistantPanel } from './components/AIAssistantPanel';
-import { VideoPanel } from './components/VideoPanel';
-import VerdictVote from './src/components/viewer/VerdictVote';
-import type { TranscriptEntry, Role, AIHistoryEntry, AIResponse } from './types';
-import { getAiResponse } from './services/geminiService';
-import { demoScript, DemoActionType } from './services/demoScript';
 
 export default function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
