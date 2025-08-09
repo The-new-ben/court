@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Database, Settings, Activity, Shield, AlertTriangle } from 'lucide-react';
+import { getAllCases, getCaseCount, clearCases } from '../utils/db';
+import { useToast } from './Toast';
 
 interface LogFilters {
   user: string;
@@ -23,9 +25,9 @@ export default function AdminPanel() {
   });
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logFilters, setLogFilters] = useState<LogFilters>({ user: '', action: '' });
+  const toast = useToast();
 
   useEffect(() => {
-    // Load admin statistics
     loadStats();
     loadLogs();
   }, []);
@@ -46,31 +48,16 @@ export default function AdminPanel() {
           systemHealth: 'תקין'
         }));
       }
-    } catch (error) {
+    } catch {
       setStats(prev => ({
         ...prev,
         systemHealth: 'שגיאה בחיבור'
       }));
     }
 
-    // Get cases count from IndexedDB
     try {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('courtDBv6', 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
-      const transaction = db.transaction('cases', 'readonly');
-      const store = transaction.objectStore('cases');
-      const countRequest = store.count();
-      
-      countRequest.onsuccess = () => {
-        setStats(prev => ({
-          ...prev,
-          totalCases: countRequest.result
-        }));
-      };
+      const totalCases = await getCaseCount();
+      setStats(prev => ({ ...prev, totalCases }));
     } catch (error) {
       console.warn('Could not get cases count:', error);
     }
@@ -78,36 +65,23 @@ export default function AdminPanel() {
 
   const exportData = async () => {
     try {
-      const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('courtDBv6', 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-
-      const transaction = db.transaction('cases', 'readonly');
-      const store = transaction.objectStore('cases');
-      const request = store.getAll();
-      
-      request.onsuccess = () => {
-        const data = {
-          exportDate: new Date().toISOString(),
-          cases: request.result,
-          totalCases: request.result.length
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { 
-          type: 'application/json' 
-        });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `hypercourt_backup_${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-        
-        alert('גיבוי הנתונים הושלם בהצלחה!');
+      const cases = await getAllCases();
+      const data = {
+        exportDate: new Date().toISOString(),
+        cases,
+        totalCases: cases.length
       };
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json'
+      });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `hypercourt_backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast('גיבוי הנתונים הושלם בהצלחה!');
     } catch (error) {
-      alert('שגיאה ביצירת גיבוי: ' + error);
+      toast('שגיאה ביצירת גיבוי: ' + error);
     }
   };
 
@@ -116,6 +90,8 @@ export default function AdminPanel() {
       const params = new URLSearchParams();
       if (logFilters.user) params.append('user', logFilters.user);
       if (logFilters.action) params.append('action', logFilters.action);
+      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
+        credentials: 'include'
       const token = localStorage.getItem('hypercourt_token');
         const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -135,20 +111,11 @@ export default function AdminPanel() {
   const clearSystemData = async () => {
     if (confirm('האם אתה בטוח שברצונך למחוק את כל נתוני המערכת? פעולה זו בלתי הפיכה!')) {
       try {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open('courtDBv6', 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-
-        const transaction = db.transaction('cases', 'readwrite');
-        const store = transaction.objectStore('cases');
-        store.clear();
-        
-        alert('כל נתוני המערכת נמחקו בהצלחה!');
+        await clearCases();
+        toast('כל נתוני המערכת נמחקו בהצלחה!');
         loadStats();
       } catch (error) {
-        alert('שגיאה במחיקת נתונים: ' + error);
+        toast('שגיאה במחיקת נתונים: ' + error);
       }
     }
   };
