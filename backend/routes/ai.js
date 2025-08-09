@@ -7,7 +7,7 @@ const router = express.Router();
 // AI chat endpoint - requires authentication and specific roles
 router.post('/chat', 
   authMiddleware, 
-  requireRole(['admin', 'lawyer', 'judge']),
+  requireRole(['admin', 'judge', 'lawyer', 'clerk']),
   async (req, res) => {
     try {
       const { model, messages } = req.body;
