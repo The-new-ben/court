@@ -1,3 +1,19 @@
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Header } from "./components/Header";
+import { CaseInfoPanel } from "./components/CaseInfoPanel";
+import { TranscriptPanel } from "./components/TranscriptPanel";
+import { UserInputPanel } from "./components/UserInputPanel";
+import { AIAssistantPanel } from "./components/AIAssistantPanel";
+import { VideoPanel } from "./components/VideoPanel";
+import { AudiencePanel } from "./components/AudiencePanel";
+import type {
+  TranscriptEntry,
+  Role,
+  AIHistoryEntry,
+  AIResponse,
+} from "./types";
+import { getAiResponse } from "./services/geminiService";
+import { demoScript, DemoActionType } from "./services/demoScript";
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Header } from './components/Header';
@@ -17,7 +33,7 @@ export default function App() {
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const demoTimeoutRef = useRef<number[]>([]);
-  
+
   const transcriptRef = useRef(transcript);
   useEffect(() => {
     transcriptRef.current = transcript;
@@ -36,6 +52,20 @@ export default function App() {
     };
   }, []);
 
+  const handleVote = useCallback((party: "plaintiff" | "defendant") => {
+    setVotes((prev) => ({ ...prev, [party]: prev[party] + 1 }));
+  }, []);
+
+  const handleStatementSubmit = useCallback(
+    (role: Role, name: string, text: string) => {
+      const newEntry = {
+        role,
+        name,
+        text,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
   const handleStatementSubmit = useCallback((role: Role, name: string, text: string) => {
     const newEntry = {
       role,
@@ -58,11 +88,38 @@ export default function App() {
       const errorResponse: AIResponse = {
         text: "I'm sorry, I encountered an error. Please check the console for details or try again later."
       };
-      setAiHistory(prev => [...prev, { prompt, response: errorResponse }]);
-    } finally {
-      setIsAiLoading(false);
-    }
-  }, []);
+      setTranscript((prev) => [...prev, { ...newEntry, id: prev.length + 1 }]);
+    },
+    [],
+  );
+
+  const handleAiPromptSubmit = useCallback(
+    async (prompt: string, useSearch: boolean, systemInstruction?: string) => {
+      setIsAiLoading(true);
+      const fullTranscriptText = transcriptRef.current
+        .map((entry) => `${entry.role} (${entry.name}): ${entry.text}`)
+        .join("\n");
+
+      try {
+        const response: AIResponse = await getAiResponse(
+          prompt,
+          fullTranscriptText,
+          useSearch,
+          systemInstruction,
+        );
+        setAiHistory((prev) => [...prev, { prompt, response }]);
+      } catch (error) {
+        console.error("AI Error:", error);
+        const errorResponse: AIResponse = {
+          text: "I'm sorry, I encountered an error. Please check the console for details or try again later.",
+        };
+        setAiHistory((prev) => [...prev, { prompt, response: errorResponse }]);
+      } finally {
+        setIsAiLoading(false);
+      }
+    },
+    [],
+  );
 
   const startDemo = useCallback(() => {
     stopDemo();
@@ -84,18 +141,22 @@ export default function App() {
             }
             break;
           case DemoActionType.AI_ACTION:
-            let aiPrompt = action.prompt || '';
+            let aiPrompt = action.prompt || "";
             let systemInstruction = action.systemInstruction;
             let useSearch = action.useSearch || false;
 
             if (action.isQuickAction) {
-                if (action.quickActionType === 'summarize') {
-                    aiPrompt = "Please provide a concise summary of the court proceedings based on the transcript so far.";
-                    systemInstruction = "You are a helpful AI legal assistant integrated into a virtual courtroom application. Your task is to summarize court transcripts accurately and neutrally.";
-                } else {
-                    aiPrompt = "Please analyze the transcript and identify the key arguments presented by both the Plaintiff and the Defendant. Present them clearly.";
-                    systemInstruction = "Your task is to extract and list key legal arguments from a court transcript.";
-                }
+              if (action.quickActionType === "summarize") {
+                aiPrompt =
+                  "Please provide a concise summary of the court proceedings based on the transcript so far.";
+                systemInstruction =
+                  "You are a helpful AI legal assistant integrated into a virtual courtroom application. Your task is to summarize court transcripts accurately and neutrally.";
+              } else {
+                aiPrompt =
+                  "Please analyze the transcript and identify the key arguments presented by both the Plaintiff and the Defendant. Present them clearly.";
+                systemInstruction =
+                  "Your task is to extract and list key legal arguments from a court transcript.";
+              }
             }
             handleAiPromptSubmit(aiPrompt, useSearch, systemInstruction);
             break;
@@ -105,9 +166,8 @@ export default function App() {
         }
 
         if (index === demoScript.length - 1) {
-            setTimeout(() => setIsDemoRunning(false), 500);
+          setTimeout(() => setIsDemoRunning(false), 500);
         }
-
       }, cumulativeDelay);
       demoTimeoutRef.current.push(timeoutId);
     });
@@ -115,23 +175,30 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
-      <Header onStartDemo={startDemo} onStopDemo={stopDemo} isDemoRunning={isDemoRunning} />
+      <Header
+        onStartDemo={startDemo}
+        onStopDemo={stopDemo}
+        isDemoRunning={isDemoRunning}
+      />
       <main className="container mx-auto p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
           <div className="lg:col-span-3">
             <CaseInfoPanel />
           </div>
 
           <div className="lg:col-span-6 flex flex-col gap-6">
-             <VideoPanel />
+            <VideoPanel />
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-1 flex-grow flex flex-col h-[calc(100vh-480px)] lg:h-[calc(100vh-420px)]">
               <TranscriptPanel transcript={transcript} />
-              <UserInputPanel onSubmit={handleStatementSubmit} disabled={isDemoRunning} />
+              <UserInputPanel
+                onSubmit={handleStatementSubmit}
+                disabled={isDemoRunning}
+              />
             </div>
           </div>
-          
+
           <div className="lg:col-span-3 flex flex-col gap-6">
+            <AudiencePanel votes={votes} onVote={handleVote} />
             <VerdictVote caseId="demo" />
             <AIAssistantPanel
               history={aiHistory}
@@ -140,7 +207,6 @@ export default function App() {
               disabled={isDemoRunning}
             />
           </div>
-
         </div>
       </main>
     </div>
