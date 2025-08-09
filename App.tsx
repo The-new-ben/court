@@ -6,7 +6,7 @@ import { TranscriptPanel } from './components/TranscriptPanel';
 import { UserInputPanel } from './components/UserInputPanel';
 import { AIAssistantPanel } from './components/AIAssistantPanel';
 import { VideoPanel } from './components/VideoPanel';
-import { AudiencePanel } from './components/AudiencePanel';
+import VerdictVote from './src/components/viewer/VerdictVote';
 import type { TranscriptEntry, Role, AIHistoryEntry, AIResponse } from './types';
 import { getAiResponse } from './services/geminiService';
 import { demoScript, DemoActionType } from './services/demoScript';
@@ -15,7 +15,6 @@ export default function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [aiHistory, setAiHistory] = useState<AIHistoryEntry[]>([]);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
-  const [votes, setVotes] = useState({ plaintiff: 0, defendant: 0 });
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const demoTimeoutRef = useRef<number[]>([]);
   
@@ -35,10 +34,6 @@ export default function App() {
     return () => {
       demoTimeoutRef.current.forEach(clearTimeout);
     };
-  }, []);
-
-  const handleVote = useCallback((party: 'plaintiff' | 'defendant') => {
-    setVotes(prev => ({ ...prev, [party]: prev[party] + 1 }));
   }, []);
 
   const handleStatementSubmit = useCallback((role: Role, name: string, text: string) => {
@@ -76,7 +71,6 @@ export default function App() {
     // Reset state for demo
     setTranscript([]);
     setAiHistory([]);
-    setVotes({ plaintiff: 128, defendant: 96 }); // Start with some base votes
 
     let cumulativeDelay = 500;
 
@@ -87,13 +81,6 @@ export default function App() {
           case DemoActionType.TRANSCRIPT:
             if (action.role && action.name && action.text) {
               handleStatementSubmit(action.role, action.name, action.text);
-            }
-            break;
-          case DemoActionType.VOTE:
-            if (action.party && action.voteCount) {
-              for (let i = 0; i < action.voteCount; i++) {
-                setTimeout(() => handleVote(action.party!), i * 50);
-              }
             }
             break;
           case DemoActionType.AI_ACTION:
@@ -124,7 +111,7 @@ export default function App() {
       }, cumulativeDelay);
       demoTimeoutRef.current.push(timeoutId);
     });
-  }, [stopDemo, handleVote, handleStatementSubmit, handleAiPromptSubmit]);
+  }, [stopDemo, handleStatementSubmit, handleAiPromptSubmit]);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
@@ -145,7 +132,7 @@ export default function App() {
           </div>
           
           <div className="lg:col-span-3 flex flex-col gap-6">
-             <AudiencePanel votes={votes} onVote={handleVote} />
+            <VerdictVote caseId="demo" />
             <AIAssistantPanel
               history={aiHistory}
               isLoading={isAiLoading}
