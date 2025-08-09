@@ -4,6 +4,9 @@ export interface Case {
   opinions: { system: string; reply: string }[];
   balanced: string;
   timestamp: string;
+  duration?: number;
+  outcome?: string;
+  complianceViolations?: number;
 }
 
 const DB_NAME = 'courtDBv6';
