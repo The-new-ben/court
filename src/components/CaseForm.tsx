@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { aiService } from '../services/aiService';
 import { Case } from '../services/caseService';
+import type { ChatMessage } from '../../types';
 import { Mic, Video, Upload, Play } from 'lucide-react';
 
 interface CaseFormProps {
@@ -54,27 +55,30 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
       const opinions = await Promise.all(
         selectedSystems.map(async (system) => {
           const prompt = `Follow this order strictly: 1. Jurisdiction & applicable law. 2. Uncontested vs contested facts. 3. Key legal issues. 4. Evidence admissibility & weight. 5. Parties' arguments. 6. Apply substantive rules of ${system}. 7. Deliver a reasoned, structured judgment with citations.`;
-          
-          const reply = await aiService.chat([
+
+          const messages: ChatMessage[] = [
             { role: 'system', content: `You are a judge trained in ${system}.\n${prompt}` },
             { role: 'user', content: description }
-          ], selectedModel);
+          ];
+          const reply = await aiService.chat(messages, selectedModel);
 
           return { system, reply };
         })
       );
 
-      const balanced = selectedSystems.length > 1 
-        ? await aiService.chat([
-            { 
-              role: 'system', 
-              content: 'You are an impartial mediator summarizing multiple legal opinions and issuing a single, balanced verdict.' 
-            },
-            { 
-              role: 'user', 
-              content: opinions.map(o => `Opinion from ${o.system} perspective:\n${o.reply}`).join('\n\n---\n\n')
-            }
-          ], selectedModel)
+      const balanceMessages: ChatMessage[] = selectedSystems.length > 1 ? [
+        {
+          role: 'system',
+          content: 'You are an impartial mediator summarizing multiple legal opinions and issuing a single, balanced verdict.'
+        },
+        {
+          role: 'user',
+          content: opinions.map(o => `Opinion from ${o.system} perspective:\n${o.reply}`).join('\n\n---\n\n')
+        }
+      ] : [];
+
+      const balanced = selectedSystems.length > 1
+        ? await aiService.chat(balanceMessages, selectedModel)
         : opinions[0].reply;
 
       const caseData: Case = {
