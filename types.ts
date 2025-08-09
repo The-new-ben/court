@@ -4,7 +4,7 @@ export enum Role {
   DEFENDANT = "Defendant",
   WITNESS = "Witness",
   AUDIENCE = "Audience",
-  AI = "AI Legal Assistant"
+  AI = "AI Legal Assistant",
 }
 
 export interface TranscriptEntry {
@@ -30,4 +30,20 @@ export interface AIResponse {
 export interface AIHistoryEntry {
   prompt: string;
   response: AIResponse;
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+export interface RewardItem {
+  id: string;
+  name: string;
+  cost: number;
+}
+
+export interface RewardRedemption {
+  userId: string;
+  rewardId: string;
+  timestamp: string;
 }
