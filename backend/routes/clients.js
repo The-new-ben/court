@@ -1,6 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const { Client, clients } = require('../models/client');
+const { getErrorMessage } = require('../services/errorMessages');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get('/', authMiddleware, (req, res) => {
 router.get('/:id', authMiddleware, (req, res) => {
   const client = clients.find(c => c.id === req.params.id);
   if (!client) {
-    return res.status(404).json({ error: 'לקוח לא נמצא' });
+    return res.status(404).json({ error: getErrorMessage('CLIENT_NOT_FOUND', req.headers['accept-language']) });
   }
   res.json(client);
 });
@@ -19,7 +20,7 @@ router.get('/:id', authMiddleware, (req, res) => {
 router.post('/', authMiddleware, (req, res) => {
   const { name, email, phone, history = [] } = req.body;
   if (!name || !email || !phone) {
-    return res.status(400).json({ error: 'חסרים פרטי לקוח' });
+    return res.status(400).json({ error: getErrorMessage('MISSING_CLIENT_DETAILS', req.headers['accept-language']) });
   }
   const client = new Client({ name, email, phone, history });
   clients.push(client);
@@ -29,7 +30,7 @@ router.post('/', authMiddleware, (req, res) => {
 router.put('/:id', authMiddleware, (req, res) => {
   const client = clients.find(c => c.id === req.params.id);
   if (!client) {
-    return res.status(404).json({ error: 'לקוח לא נמצא' });
+    return res.status(404).json({ error: getErrorMessage('CLIENT_NOT_FOUND', req.headers['accept-language']) });
   }
   const { name, email, phone, history } = req.body;
   if (name !== undefined) client.name = name;
@@ -42,7 +43,7 @@ router.put('/:id', authMiddleware, (req, res) => {
 router.delete('/:id', authMiddleware, (req, res) => {
   const index = clients.findIndex(c => c.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ error: 'לקוח לא נמצא' });
+    return res.status(404).json({ error: getErrorMessage('CLIENT_NOT_FOUND', req.headers['accept-language']) });
   }
   const removed = clients.splice(index, 1)[0];
   res.json(removed);

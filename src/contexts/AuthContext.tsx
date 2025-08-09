@@ -6,6 +6,8 @@ type UserRole = 'admin' | 'judge' | 'lawyer' | 'plaintiff' | 'viewer';
 interface User {
   email: string;
   role: UserRole;
+interface User {
+  id: string;
 interface Client {
   email: string;
   role: string;
