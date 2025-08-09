@@ -14,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,40 +24,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('hypercourt_token');
-    const userData = localStorage.getItem('hypercourt_user');
-    
-    if (token && userData) {
+    const init = async () => {
       try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Invalid user data in localStorage');
-        logout();
+        const profile = await authService.getProfile();
+        if (profile && profile.user) {
+          setUser(profile.user);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    init();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password);
-    localStorage.setItem('hypercourt_token', response.token);
-    localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
     setUser(response.user);
   };
 
   const register = async (email: string, password: string, role: string, name: string) => {
     const response = await authService.register(email, password, role, name);
-    // Auto-login after successful registration
     if (response.token) {
-      localStorage.setItem('hypercourt_token', response.token);
-      localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
       setUser(response.user);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('hypercourt_token');
-    localStorage.removeItem('hypercourt_user');
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
   };
 
