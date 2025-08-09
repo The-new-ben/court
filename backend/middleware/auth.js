@@ -9,6 +9,15 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
   }
   const token = authHeader.substring(7);
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
+  }
+
+  const token = authHeader.substring(7);
+
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = payload;
@@ -78,3 +87,4 @@ module.exports = {
   getUserCount,
   supabase
 };
+module.exports = { authMiddleware, requireRole };
