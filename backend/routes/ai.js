@@ -1,5 +1,6 @@
 const express = require('express');
 const { authMiddleware, requireRole } = require('../middleware/auth');
+const { getErrorMessage } = require('../services/errorMessages');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.post('/chat',
       const { model, messages } = req.body;
 
       if (!model || !messages) {
-        return res.status(400).json({ error: 'חסרים פרמטרים נדרשים' });
+        return res.status(400).json({ error: getErrorMessage('MISSING_REQUIRED_PARAMS', req.headers['accept-language']) });
       }
 
       console.log(`AI request from user ${req.user.email} (${req.user.role})`);
@@ -40,7 +41,7 @@ router.post('/chat',
 
     } catch (error) {
       console.error('AI service error:', error);
-      res.status(500).json({ error: 'שגיאה בשירות הבינה המלאכותית' });
+      res.status(500).json({ error: getErrorMessage('AI_SERVICE_ERROR', req.headers['accept-language']) });
     }
   }
 );
