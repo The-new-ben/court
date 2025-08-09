@@ -73,8 +73,24 @@ router.post(
 
       console.log(`New user registered: ${email} (${role})`);
 
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          points: user.points,
+          referralCode: user.referralCode,
+          referrerId: user.referrerId
+        }
         token,
         user: user.toJSON()
       });
@@ -126,8 +142,24 @@ router.post(
 
       console.log(`User logged in: ${email} (${user.role})`);
 
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
       res.json({
         message: 'התחברת בהצלחה',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          points: user.points,
+          referralCode: user.referralCode,
+          referrerId: user.referrerId
+        }
         token,
         user: user.toJSON()
       });
@@ -138,4 +170,15 @@ router.post(
   }
 );
 
+// Logout endpoint
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.json({ message: 'התנתקת בהצלחה' });
+});
+
+module.exports = router;
 module.exports = router;
