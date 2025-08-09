@@ -1,6 +1,8 @@
 const API_URL = 'http://localhost:5001/api/auth';
 let accessToken: string | null = null;
 let tokenExpiry = 0;
+import { API_BASE_URL } from '../config';
+const AUTH_URL = `${API_BASE_URL}/auth`;
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 const AUTH_URL = `${API_URL}/auth`;
 
@@ -58,6 +60,7 @@ export const authService = {
       tokenExpiry = payload.exp * 1000;
     } catch {
       tokenExpiry = 0;
+        const response = await fetchWithTimeout(`${AUTH_URL}/login`, {
       const response = await fetchWithTimeout(`${AUTH_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,6 +125,7 @@ export const authService = {
     if (!response.ok) {
       handleApiError(data, response);
     try {
+        const response = await fetchWithTimeout(`${AUTH_URL}/register`, {
       const response = await fetchWithTimeout(`${AUTH_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,6 +161,7 @@ export const authService = {
     try {
       const response = await fetchWithTimeout(`${API_URL.replace('/auth', '')}/profile`, {
       const token = localStorage.getItem('hypercourt_token');
+        const response = await fetchWithTimeout(`${API_BASE_URL}/profile`, {
         const response = await fetchWithTimeout(`${API_URL}/profile`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
