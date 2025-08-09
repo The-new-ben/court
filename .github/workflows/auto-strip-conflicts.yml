@@ -10,7 +10,7 @@ on:
         required: true
         default: "merge"
   schedule:
-    - cron: "*/15 * * * *" # ריצה כל 15 דק' על כל ה-PRים הפתוחים
+    - cron: "*/15 * * * *" # כל 15 דקות
 
 permissions:
   contents: write
@@ -41,7 +41,7 @@ jobs:
               prs = [context.payload.pull_request];
             } else {
               prs = await github.paginate(
-                github.pulls.list,
+                github.rest.pulls.list,
                 { owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100 }
               );
             }
@@ -72,7 +72,7 @@ jobs:
             echo "=== PR #$num  ($headRepo:$headRef -> $baseRef)"
 
             if [ "$isFork" = "true" ]; then
-              echo "Fork PR — skipping push (GitHub לא מאפשר דחיפה לפורק)."
+              echo "Fork PR — skipping push (בטיחות)."
               continue
             fi
 
@@ -101,7 +101,6 @@ jobs:
               if [ -n "$UNMERGED" ]; then
                 echo "$UNMERGED" | while read -r f; do
                   [ -z "$f" ] && continue
-                  # מחיקה של המארקרים בלבד
                   sed -i '/^<<<<<<< .*$/d;/^=======$/d;/^>>>>>>> .*$/d' "$f"
                   git add -- "$f"
                   echo "Cleaned: $f"
@@ -126,14 +125,14 @@ jobs:
             const method = `${{ steps.pick.outputs.merge_method }}`;
             for (const p of prs) {
               try {
-                const { data } = await github.pulls.get({
+                const { data } = await github.rest.pulls.get({
                   owner: context.repo.owner, repo: context.repo.repo, pull_number: p.number
                 });
                 if (!data.mergeable) {
                   core.info(`PR #${p.number} not mergeable (${data.mergeable_state})`);
                   continue;
                 }
-                await github.pulls.merge({
+                await github.rest.pulls.merge({
                   owner: context.repo.owner, repo: context.repo.repo,
                   pull_number: p.number, merge_method: method
                 });
