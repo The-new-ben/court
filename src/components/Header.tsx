@@ -21,6 +21,11 @@ export default function Header() {
               {t('header.welcome', { email: user?.email || '' })}
             </p>
             <p className="text-xs text-gray-500">
+              {user?.role === 'admin' ? 'מנהל מערכת' :
+               user?.role === 'lawyer' ? 'עורך/ת דין' :
+               user?.role === 'judge' ? 'שופט/ת' :
+               user?.role === 'litigant' ? 'מתדיין/נת' :
+               user?.role === 'clerk' ? 'פקיד/ת' : user?.role}
               {user?.role === 'admin' ? t('header.roles.admin') :
                user?.role === 'lawyer' ? t('header.roles.lawyer') :
                user?.role === 'judge' ? t('header.roles.judge') :

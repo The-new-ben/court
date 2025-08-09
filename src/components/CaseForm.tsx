@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { aiService } from '../services/aiService';
 import { Case } from '../services/caseService';
+import { CaseStage } from '../cases/types';
 import type { ChatMessage } from '../../types';
 import { Mic, Video, Upload, Play } from 'lucide-react';
 import { pointsService } from '../services/pointsService';
@@ -92,12 +93,15 @@ export default function CaseForm({ onNewCase, isLoading, setIsLoading }: CaseFor
         ? await aiService.chat(balanceMessages, selectedModel)
         : opinions[0].reply;
 
+      const now = new Date();
       const caseData: Case = {
         id: crypto.randomUUID(),
         description,
         opinions,
         balanced,
-        timestamp: new Date().toLocaleString('he-IL')
+        timestamp: now.toLocaleString('he-IL'),
+        stage: 'filing' as CaseStage,
+        history: [{ stage: 'filing' as CaseStage, timestamp: now.toISOString() }]
       };
 
       onNewCase(caseData);
