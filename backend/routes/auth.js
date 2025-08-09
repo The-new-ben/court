@@ -3,21 +3,22 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
-const { users } = require('../middleware/auth');
+const User = require('../models/User');
 
 const router = express.Router();
 
 // Rate limiting for auth endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: 'יותר מדי ניסיונות התחברות, נסה שוב בעוד 15 דקות',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 // Registration endpoint
-router.post('/register', 
+router.post(
+  '/register',
   authLimiter,
   [
     body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
@@ -29,16 +30,16 @@ router.post('/register',
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          error: 'נתונים לא תקינים', 
-          details: errors.array() 
+        return res.status(400).json({
+          error: 'נתונים לא תקינים',
+          details: errors.array()
         });
       }
 
       const { email, password, name, role } = req.body;
 
       // Check if user already exists
-      const existingUser = users.find(u => u.email === email);
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({ error: 'משתמש עם אימייל זה כבר קיים' });
       }
@@ -47,17 +48,21 @@ router.post('/register',
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+      // Generate unique referral code
+      let referralCode;
+      do {
+        referralCode = Math.random().toString(36).substring(2, 8);
+      } while (await User.findOne({ referralCode }));
+
       // Create user
-      const user = {
-        id: Date.now().toString(),
+      const user = new User({
         email,
         password: hashedPassword,
         name,
         role,
-        createdAt: new Date().toISOString()
-      };
-
-      users.push(user);
+        referralCode
+      });
+      await user.save();
 
       // Generate JWT
       const token = jwt.sign(
@@ -71,14 +76,8 @@ router.post('/register',
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
-        }
+        user: user.toJSON()
       });
-
     } catch (error) {
       console.error('Registration error:', error);
       res.status(500).json({ error: 'שגיאה ביצירת משתמש' });
@@ -87,7 +86,8 @@ router.post('/register',
 );
 
 // Login endpoint
-router.post('/login',
+router.post(
+  '/login',
   authLimiter,
   [
     body('email').isEmail().withMessage('כתובת אימייל לא תקינה'),
@@ -97,16 +97,16 @@ router.post('/login',
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          error: 'נתונים לא תקינים', 
-          details: errors.array() 
+        return res.status(400).json({
+          error: 'נתונים לא תקינים',
+          details: errors.array()
         });
       }
 
       const { email, password } = req.body;
 
       // Find user
-      const user = users.find(u => u.email === email);
+      const user = await User.findOne({ email });
       if (!user) {
         return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
       }
@@ -129,14 +129,8 @@ router.post('/login',
       res.json({
         message: 'התחברת בהצלחה',
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
-        }
+        user: user.toJSON()
       });
-
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ error: 'שגיאה בהתחברות' });
