@@ -3,12 +3,13 @@
   "name": "virtual-court",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test backend/__tests__/scheduleService.test.js"
   },
   "dependencies": {
     "@google/genai": "^1.12.0",
