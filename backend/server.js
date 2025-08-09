@@ -4,7 +4,7 @@ const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const caseRoutes = require('./routes/cases');
 const logRoutes = require('./routes/logs');
-const { users } = require('./middleware/auth');
+const { getUserCount } = require('./middleware/auth');
 
 const app = express();
 app.use(cors());
@@ -15,8 +15,13 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/logs', logRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', users: users.length });
+app.get('/api/health', async (req, res) => {
+  try {
+    const count = await getUserCount();
+    res.json({ status: 'ok', users: count });
+  } catch (err) {
+    res.status(500).json({ status: 'error' });
+  }
 });
 
 const PORT = process.env.PORT || 5001;
