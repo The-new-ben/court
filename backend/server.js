@@ -20,6 +20,10 @@ app.get('/api/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
+if (!process.env.JWT_SECRET) {
+  console.error('Missing JWT_SECRET environment variable. Set it before starting the server.');
+  process.exit(1);
+}
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
