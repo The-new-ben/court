@@ -13,11 +13,8 @@ export default function ClientList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('hypercourt_token');
     fetch('http://localhost:5001/api/clients', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      credentials: 'include'
     })
       .then(async res => {
         if (!res.ok) {

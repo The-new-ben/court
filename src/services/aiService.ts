@@ -2,14 +2,12 @@ const API_URL = 'http://localhost:5001/api';
 
 export const aiService = {
   async chat(messages: any[], model: string) {
-    const token = localStorage.getItem('hypercourt_token');
-    
     const response = await fetch(`${API_URL}/ai/chat`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ model, messages })
     });
     

@@ -77,9 +77,15 @@ router.post('/register',
 
       console.log(`New user registered: ${email} (${role})`);
 
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
-        token,
         user: {
           id: user.id,
           email: user.email,
@@ -138,9 +144,15 @@ router.post('/login',
 
       console.log(`User logged in: ${email} (${user.role})`);
 
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
       res.json({
         message: 'התחברת בהצלחה',
-        token,
         user: {
           id: user.id,
           email: user.email,
@@ -158,5 +170,15 @@ router.post('/login',
     }
   }
 );
+
+// Logout endpoint
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.json({ message: 'התנתקת בהצלחה' });
+});
 
 module.exports = router;

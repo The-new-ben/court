@@ -8,6 +8,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 100
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: 'include',
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -87,23 +88,26 @@ export const authService = {
 
   async getProfile() {
     try {
-      const token = localStorage.getItem('hypercourt_token');
       const response = await fetchWithTimeout(`${API_URL.replace('/auth', '')}/profile`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
-      
+
       const data = await response.json();
       if (!response.ok) {
         handleApiError(data, response);
       }
-      
+
       return data;
     } catch (error) {
       throw error;
     }
+  },
+
+  async logout() {
+    await fetchWithTimeout(`${API_URL}/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };

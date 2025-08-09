@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const caseRoutes = require('./routes/cases');
@@ -7,7 +8,8 @@ const logRoutes = require('./routes/logs');
 const { users } = require('./middleware/auth');
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
