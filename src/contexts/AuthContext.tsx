@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+import React, { createContext, useContext, useState } from 'react';
+// TODO: Restore authentication once UI work is complete
+// import { authService } from '../services/authService';
 
 type UserRole = 'admin' | 'judge' | 'lawyer' | 'plaintiff' | 'viewer';
 
@@ -30,9 +31,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Temporary stubbed user; replace with real auth logic later
+  const [user] = useState<User | null>({ email: 'dummy@example.com', role: 'guest' });
+  const [isLoading] = useState(false);
   const [user, setUser] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const login = async () => {};
+  const register = async () => {};
+  const logout = () => {};
   useEffect(() => {
     setIsLoading(false);
   }, []);
