@@ -12,6 +12,8 @@
     "test": "node --test backend/__tests__/scheduleService.test.js"
   },
   "dependencies": {
+    "chart.js": "^4.4.0",
+    "cookie-parser": "^1.4.6",
     "@supabase/supabase-js": "^2.54.0",
     "chart.js": "^4.4.0",
     "@google/genai": "^1.12.0",
