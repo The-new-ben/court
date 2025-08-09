@@ -4,6 +4,7 @@ import Header from './Header';
 import CaseForm from './CaseForm';
 import CasesList from './CasesList';
 import AdminPanel from './AdminPanel';
+import ViewerStatsBar from './ViewerStatsBar';
 import WaitlistBanner from './WaitlistBanner';
 import EvidenceViewer from './EvidenceViewer';
 import { evidenceService } from '../services/evidenceService';
@@ -72,6 +73,7 @@ export default function MainApp() {
       </div>
 
       <Header />
+      <ViewerStatsBar />
 
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
         {isLobbyFull && <WaitlistBanner />}

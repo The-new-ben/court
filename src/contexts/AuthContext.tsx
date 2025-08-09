@@ -41,6 +41,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async () => {};
   const logout = () => {};
   useEffect(() => {
+    const init = async () => {
+      try {
+        const profile = await authService.getProfile();
+        if (profile && profile.user) {
+          setUser(profile.user);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    init();
     setIsLoading(false);
   }, []);
 

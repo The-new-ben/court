@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+const connect = require('../db');
+const User = require('../models/User');
+
+async function authMiddleware(req, res, next) {
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -31,8 +35,13 @@ function authMiddleware(req, res, next) {
   const token = authHeader.substring(7);
 
   try {
+    await connect();
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload;
+    const user = await User.findById(payload.userId).select('-password');
+    if (!user) {
+      return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
+    }
+    req.user = { id: user.id, email: user.email, role: user.role, name: user.name };
     next();
   } catch (err) {
     console.error('JWT verification failed:', err.message);
@@ -100,4 +109,5 @@ module.exports = {
   supabase
 };
 module.exports = { authMiddleware, requireRole, users, VALID_ROLES };
+module.exports = { authMiddleware, requireRole };
 module.exports = { authMiddleware, requireRole };
