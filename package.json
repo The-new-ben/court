@@ -3,12 +3,13 @@
   "name": "virtual-court",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test backend/__tests__/scheduleService.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",
@@ -24,6 +25,11 @@
     "react-dom": "^19.1.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "handlebars": "^4.7.8",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

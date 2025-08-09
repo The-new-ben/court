@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Database, Settings, Activity, Shield, AlertTriangle } from 'lucide-react';
+import { adminService } from '../services/adminService';
 import { getAllCases, getCaseCount, clearCases } from '../utils/db';
 import { useToast } from './Toast';
 
@@ -23,12 +24,15 @@ export default function AdminPanel() {
     systemHealth: 'תקין',
     lastBackup: 'לא זמין'
   });
+  const [userList, setUserList] = useState<any[]>([]);
+  const roles = ['admin', 'judge', 'lawyer', 'litigant', 'clerk'];
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logFilters, setLogFilters] = useState<LogFilters>({ user: '', action: '' });
   const toast = useToast();
 
   useEffect(() => {
     loadStats();
+    loadUsers();
     loadLogs();
   }, []);
 
@@ -60,6 +64,24 @@ export default function AdminPanel() {
       setStats(prev => ({ ...prev, totalCases }));
     } catch (error) {
       console.warn('Could not get cases count:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const data = await adminService.getUsers();
+      setUserList(data);
+    } catch (error) {
+      console.error('Failed to load users', error);
+    }
+  };
+
+  const updateRole = async (id: string, role: string) => {
+    try {
+      await adminService.updateUserRole(id, role);
+      setUserList(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+    } catch (error) {
+      alert('שגיאה בעדכון תפקיד: ' + error);
     }
   };
 
@@ -219,6 +241,41 @@ export default function AdminPanel() {
                 <p className="text-sm opacity-90">בדוק חיבור לשרת הבקנד</p>
               </div>
             </button>
+          </div>
+        </div>
+
+        {/* Role Management */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">ניהול משתמשים</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">שם</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">אימייל</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">תפקיד</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {userList.map(u => (
+                  <tr key={u.id}>
+                    <td className="px-4 py-2">{u.name}</td>
+                    <td className="px-4 py-2">{u.email}</td>
+                    <td className="px-4 py-2">
+                      <select
+                        value={u.role}
+                        onChange={(e) => updateRole(u.id, e.target.value)}
+                        className="border border-gray-300 rounded-md p-1"
+                      >
+                        {roles.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
