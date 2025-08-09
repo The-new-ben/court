@@ -6,10 +6,16 @@ type UserRole = 'admin' | 'judge' | 'lawyer' | 'plaintiff' | 'viewer';
 interface User {
   email: string;
   role: UserRole;
+interface Client {
+  email: string;
+  role: string;
+  points: number;
+  referralCode: string;
+  referrerId?: string | null;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: Client | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: UserRole, name: string) => Promise<void>;
@@ -20,7 +26,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
