@@ -1,6 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const { createAuditLogger } = require('../middleware/auditLogger');
+const { getErrorMessage } = require('../services/errorMessages');
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.post('/', authMiddleware, createAuditLogger('create_case'), (req, res) =>
 router.put('/:id', authMiddleware, createAuditLogger('edit_case'), (req, res) => {
   const index = cases.findIndex(c => c.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ error: 'Case not found' });
+    return res.status(404).json({ error: getErrorMessage('CASE_NOT_FOUND', req.headers['accept-language']) });
   }
   cases[index] = { ...cases[index], ...req.body };
   res.json(cases[index]);
@@ -27,7 +28,7 @@ router.put('/:id', authMiddleware, createAuditLogger('edit_case'), (req, res) =>
 router.delete('/:id', authMiddleware, createAuditLogger('delete_case'), (req, res) => {
   const index = cases.findIndex(c => c.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ error: 'Case not found' });
+    return res.status(404).json({ error: getErrorMessage('CASE_NOT_FOUND', req.headers['accept-language']) });
   }
   const removed = cases.splice(index, 1)[0];
   res.json(removed);
