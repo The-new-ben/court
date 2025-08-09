@@ -15,7 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +30,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async () => {};
   const register = async () => {};
   const logout = () => {};
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const response = await authService.login(email, password);
+    setUser(response.user);
+  };
+
+  const register = async (email: string, password: string, role: string, name: string) => {
+    const response = await authService.register(email, password, role, name);
+    if (response.user) {
+      setUser(response.user);
+    }
+  };
+
+  const logout = async () => {
+    await authService.logout();
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
