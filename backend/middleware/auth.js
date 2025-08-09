@@ -8,6 +8,12 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'לא מחובר - נדרש טוקן אימות' });
   }
   const token = authHeader.substring(7);
+// In-memory user storage (replace with database in production)
+const users = [];
+
+// Supported roles in the system
+const VALID_ROLES = ['admin', 'judge', 'lawyer', 'litigant', 'clerk'];
+
 function authMiddleware(req, res, next) {
   const token = req.cookies?.token;
 
@@ -50,5 +56,6 @@ function requireRole(roles) {
   };
 }
 
+module.exports = { authMiddleware, requireRole, users, VALID_ROLES };
 module.exports = { authMiddleware, requireRole };
 module.exports = { authMiddleware, requireRole };
