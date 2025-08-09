@@ -5,6 +5,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const adminRoutes = require('./routes/admin');
+const cookieParser = require('cookie-parser');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
@@ -13,7 +14,8 @@ const logRoutes = require('./routes/logs');
 const User = require('./models/User');
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {

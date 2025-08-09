@@ -40,22 +40,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const initializeAuth = async () => {
     try {
-      // Check if user data exists in localStorage
-      const storedUser = localStorage.getItem('hypercourt_user');
-      const accessToken = localStorage.getItem('hypercourt_access_token');
-
-      if (storedUser && accessToken) {
-        setUser(JSON.parse(storedUser));
-        
-        // Verify token is still valid by fetching profile
-        const response = await apiClient.getProfile();
-        if (response.data) {
-          setUser(response.data.user);
-        } else {
-          // Token invalid, clear storage
-          localStorage.removeItem('hypercourt_user');
-          setUser(null);
-        }
+      const response = await apiClient.getProfile();
+      if (response.data) {
+        setUser(response.data.user);
+      } else {
+        setUser(null);
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
@@ -74,9 +63,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(response.data.user!);
         return { success: true };
       } else {
-        return { 
-          success: false, 
-          error: response.error || 'שגיאה בהתחברות' 
+        return {
+          success: false,
+          error: response.error || 'שגיאה בהתחברות'
         };
       }
     } catch (error) {
@@ -104,9 +93,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(response.data.user!);
         return { success: true };
       } else {
-        return { 
-          success: false, 
-          error: response.error || 'שגיאה ברישום' 
+        return {
+          success: false,
+          error: response.error || 'שגיאה ברישום'
         };
       }
     } catch (error) {
@@ -135,7 +124,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await apiClient.getProfile();
       if (response.data) {
         setUser(response.data.user);
-        localStorage.setItem('hypercourt_user', JSON.stringify(response.data.user));
       }
     } catch (error) {
       console.error('Profile refresh error:', error);

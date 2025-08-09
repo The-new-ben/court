@@ -138,6 +138,8 @@ export default function AdminPanel() {
       const params = new URLSearchParams();
       if (logFilters.user) params.append('user', logFilters.user);
       if (logFilters.action) params.append('action', logFilters.action);
+      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
+        credentials: 'include'
       const token = localStorage.getItem('hypercourt_token');
         const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
