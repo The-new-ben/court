@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
@@ -9,7 +10,8 @@ const { getUserCount } = require('./middleware/auth');
 const User = require('./models/User');
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
 connectDB().catch(err => console.error('DB connection error:', err));
