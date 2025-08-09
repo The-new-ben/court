@@ -12,12 +12,19 @@
     "test": "node --test backend/__tests__/scheduleService.test.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.54.0",
+    "chart.js": "^4.4.0",
     "@google/genai": "^1.12.0",
     "dompurify": "^3.2.6",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
     "swagger-ui-express": "^5.0.1",
     "handlebars": "^4.7.8",
     "chart.js": "^4.4.0",

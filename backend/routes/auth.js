@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const connect = require('../db');
+const { getUserByEmail, getUserByReferralCode, insertUser } = require('../middleware/auth');
 const { users, VALID_ROLES } = require('../middleware/auth');
 const { users } = require('../middleware/auth');
 const { getErrorMessage } = require('../services/errorMessages');
@@ -10,6 +11,8 @@ const User = require('../models/User');
 
 const router = express.Router();
 
+const authLimiter = rateLimit({
+  windowMs: 900000,
 // Rate limiting for auth endpoints
 const WINDOW_MS = parseInt(process.env.AUTH_WINDOW_MS, 10) || 15 * 60 * 1000;
 const MAX_REQUESTS = parseInt(process.env.AUTH_MAX_REQUESTS, 10) || 10;
@@ -33,6 +36,7 @@ const authLimiter = rateLimit({
   },
 });
 
+router.post('/register',
 // Registration endpoint
 router.post(
   '/register',
@@ -69,6 +73,7 @@ router.post(
       const { email, password, name, role } = req.body;
       await connect();
 
+      const existingUser = await getUserByEmail(email);
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
@@ -76,13 +81,15 @@ router.post(
       }
       const user = await User.create({ email, password, name, role });
 
-      // Hash password
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      // Generate unique referral code
       let referralCode;
       do {
+        referralCode = Math.random().toString(36).slice(2, 8);
+      } while (await getUserByReferralCode(referralCode));
+
+      const newUser = await insertUser({
         referralCode = Math.random().toString(36).substring(2, 8);
       } while (await User.findOne({ referralCode }));
 
@@ -92,13 +99,19 @@ router.post(
         password: hashedPassword,
         name,
         role,
+        createdAt: new Date().toISOString(),
+        points: 0,
+        referralCode,
+        referrerId: null
+      });
+
         referralCode
       });
       await user.save();
 
       // Generate JWT
       const token = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
+        { userId: newUser.id, email: newUser.email, role: newUser.role },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -123,6 +136,7 @@ router.post(
           referrerId: user.referrerId
         }
         token,
+        user: newUser
         user: user.toJSON()
       });
     } catch (error) {
@@ -132,6 +146,7 @@ router.post(
   }
 );
 
+router.post('/login',
 // Login endpoint
 router.post(
   '/login',
@@ -158,6 +173,7 @@ router.post(
       const { email, password } = req.body;
       await connect();
 
+      const user = await getUserByEmail(email);
       // Find user
       const user = await User.findOne({ email });
       if (!user) {
@@ -167,6 +183,12 @@ router.post(
       if (!isValidPassword) {
         return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
       }
+
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: getErrorMessage('INVALID_CREDENTIALS', req.headers['accept-language']) });
+      }
+
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
