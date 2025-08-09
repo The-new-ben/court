@@ -21,6 +21,8 @@ interface AuthContextType {
   register: (email: string, password: string, role: UserRole, name: string) => Promise<void>;
   registerViewer: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  register: (email: string, password: string, role: string, name: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,24 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('hypercourt_token');
-    const userData = localStorage.getItem('hypercourt_user');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Invalid user data in localStorage');
-        logout();
-      }
-    }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password);
-    localStorage.setItem('hypercourt_token', response.token);
-    localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
     setUser(response.user);
   };
 
@@ -56,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (response.token) {
       localStorage.setItem('hypercourt_token', response.token);
       localStorage.setItem('hypercourt_user', JSON.stringify(response.user));
+    if (response.user) {
       setUser(response.user);
     }
   };
@@ -67,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem('hypercourt_token');
     localStorage.removeItem('hypercourt_user');
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
   };
 
