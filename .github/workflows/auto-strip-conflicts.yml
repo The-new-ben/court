@@ -6,40 +6,46 @@ on:
   workflow_dispatch:
     inputs:
       merge_method:
-        description: "merge method: merge | squash | rebase"
+        description: "merge | squash | rebase"
         required: true
         default: "merge"
   schedule:
-    - cron: "*/15 * * * *"  # כל 15 דקות עובר על PRים פתוחים
+    - cron: "*/15 * * * *" # ריצה כל 15 דק' על כל ה-PRים הפתוחים
 
 permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: auto-clean-and-merge
+  cancel-in-progress: false
+
 jobs:
   clean_and_merge:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - name: Pick PRs list (event → אחד; schedule/button → כולם)
+      - name: Pick PRs (event=PR → אחד; schedule/dispatch → כולם)
         id: pick
         uses: actions/github-script@v7
         with:
           script: |
-            const event = context.eventName;
-            const method = event === 'workflow_dispatch'
+            const method = context.eventName === 'workflow_dispatch'
               ? core.getInput('merge_method')
               : 'merge';
+
             let prs = [];
-            if (event === 'pull_request_target') {
+            if (context.eventName === 'pull_request_target') {
               prs = [context.payload.pull_request];
             } else {
-              // schedule / manual → כל ה-PRים הפתוחים
-              const all = await github.paginate(
+              prs = await github.paginate(
                 github.pulls.list,
                 { owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100 }
               );
-              prs = all;
             }
+
             core.setOutput('merge_method', method);
             core.setOutput('prs', JSON.stringify(prs.map(p => ({
               number: p.number,
@@ -49,10 +55,11 @@ jobs:
               isFork: p.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`
             }))));
 
-      - name: Clean conflict markers (skip forks for safety)
+      - name: Clean conflict markers (push using token)
         if: ${{ steps.pick.outputs.prs != '' }}
         env:
           PRS_JSON: ${{ steps.pick.outputs.prs }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           echo "$PRS_JSON" | jq -c '.[]' | while read -r pr; do
@@ -63,19 +70,22 @@ jobs:
             isFork=$(echo "$pr" | jq -r '.isFork')
 
             echo "=== PR #$num  ($headRepo:$headRef -> $baseRef)"
+
             if [ "$isFork" = "true" ]; then
-              echo "Fork detected — skipping push (בטיחות)."
+              echo "Fork PR — skipping push (GitHub לא מאפשר דחיפה לפורק)."
               continue
             fi
 
             workdir="$(mktemp -d)"
             git init -q "$workdir"
             cd "$workdir"
-            git remote add origin "https://github.com/${{ github.repository }}.git"
+
+            # remote עם טוקן כדי ש-push יעבוד
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
             git fetch -q origin "$headRef" "$baseRef"
             git checkout -q -b prs-head "origin/$headRef"
 
-            git config user.name "github-actions[bot]"
+            git config user.name  "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
             set +e
@@ -91,7 +101,7 @@ jobs:
               if [ -n "$UNMERGED" ]; then
                 echo "$UNMERGED" | while read -r f; do
                   [ -z "$f" ] && continue
-                  # מוחק רק את השורות של הסימונים
+                  # מחיקה של המארקרים בלבד
                   sed -i '/^<<<<<<< .*$/d;/^=======$/d;/^>>>>>>> .*$/d' "$f"
                   git add -- "$f"
                   echo "Cleaned: $f"
@@ -104,11 +114,11 @@ jobs:
               fi
             fi
 
-            cd -
+            cd - >/dev/null
             rm -rf "$workdir"
           done
 
-      - name: Try auto-merge
+      - name: Auto-merge cleaned PRs
         uses: actions/github-script@v7
         with:
           script: |
