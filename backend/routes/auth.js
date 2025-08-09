@@ -24,12 +24,22 @@ function generateTokens(user) {
 }
 
 // Rate limiting for auth endpoints
+const WINDOW_MS = parseInt(process.env.AUTH_WINDOW_MS, 10) || 15 * 60 * 1000;
+const MAX_REQUESTS = parseInt(process.env.AUTH_MAX_REQUESTS, 10) || 10;
+const limitMessage = `יותר מדי ניסיונות התחברות, נסה שוב בעוד ${Math.floor(WINDOW_MS / 60000)} דקות`;
 const authLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  max: MAX_REQUESTS,
+  message: limitMessage,
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: 'יותר מדי ניסיונות התחברות, נסה שוב בעוד 15 דקות',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    console.warn(`Rate limit exceeded for IP ${req.ip} on ${req.originalUrl}`);
+    res.status(429).json({ error: limitMessage });
+  },
 });
 
 // Registration endpoint
@@ -90,6 +100,13 @@ router.post(
       });
 
       console.log(`New user registered: ${email} (${role})`);
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
 
       res.status(201).json({
         message: 'משתמש נוצר בהצלחה',
@@ -155,6 +172,13 @@ router.post(
       });
 
       console.log(`User logged in: ${email} (${user.role})`);
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
 
       res.json({
         message: 'התחברת בהצלחה',
@@ -228,6 +252,13 @@ router.post('/logout', (req, res) => {
     }
   }
   res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+// Logout endpoint
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
   res.json({ message: 'התנתקת בהצלחה' });
 });
 

@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     init();
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (email: string, password: string, role: string, name: string) => {
     const response = await authService.register(email, password, role, name);
     if (response.token) {
+    if (response.user) {
       setUser(response.user);
     }
   };
