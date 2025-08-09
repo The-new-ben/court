@@ -1,6 +1,6 @@
-const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://api.hypercourt.com' 
-  : 'http://localhost:5001';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://api.hypercourt.com/api' : 'http://localhost:5001/api');
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -57,7 +57,7 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+        const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ class ApiClient {
     name: string;
     role?: string;
   }): Promise<ApiResponse<TokenResponse>> {
-    const response = await this.makeRequest<TokenResponse>('/api/auth/register', {
+      const response = await this.makeRequest<TokenResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -157,7 +157,7 @@ class ApiClient {
     email: string;
     password: string;
   }): Promise<ApiResponse<TokenResponse>> {
-    const response = await this.makeRequest<TokenResponse>('/api/auth/login', {
+      const response = await this.makeRequest<TokenResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -174,7 +174,7 @@ class ApiClient {
 
   async logout(): Promise<void> {
     if (this.refreshToken) {
-      await this.makeRequest('/api/auth/logout', {
+        await this.makeRequest('/auth/logout', {
         method: 'POST',
         body: JSON.stringify({ refreshToken: this.refreshToken }),
       });
@@ -183,7 +183,7 @@ class ApiClient {
   }
 
   async getProfile(): Promise<ApiResponse<{ user: any }>> {
-    return this.makeRequest('/api/auth/profile');
+    return this.makeRequest('/auth/profile');
   }
 
   // Health check
