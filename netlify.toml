@@ -1,11 +1,11 @@
 [build]
-  command = "npm ci && npm run build"  # (Netlify יריץ קודם התקנת תלויות ואז build)
-  publish = "dist"                     # (זו התיקייה שיוצאת מה-build)
+  command = "npm ci && npm run build"   # (התקנת תלויות + בילד)
+  publish = "dist"                      # (תיקיית הפלט של Vite)
 
 [build.environment]
-  NODE_VERSION = "20"                  # (גרסת Node ב-Netlify—יציב עבור Vite)
+  NODE_VERSION = "20.11.1"              # (מנעילות גרסת Node יציבה ל-Build)
 
-# SPA (אפליקציית צד-לקוח אחת) - כל הנתיבים מפנים ל-index.html
+# SPA: כל נתיב צד-לקוח חוזר ל-index.html (פתרון 404 ב-React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
