@@ -1,11 +1,10 @@
 [build]
-  command = "npm ci && npm run build"   # (התקנת תלויות + בילד)
-  publish = "dist"                      # (תיקיית הפלט של Vite)
+  command = "npm ci && npm run build"
+  publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20.11.1"              # (מנעילות גרסת Node יציבה ל-Build)
+  NODE_VERSION = "20.11.1"
 
-# SPA: כל נתיב צד-לקוח חוזר ל-index.html (פתרון 404 ב-React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
