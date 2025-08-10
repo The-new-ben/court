@@ -77,19 +77,8 @@ export default function MainApp() {
 
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
         {isLobbyFull && <WaitlistBanner />}
-        {user?.role === 'admin' && (
-          <div className="mb-6 border-b border-gray-200">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('cases')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'cases'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                דיונים משפטיים
-              </button>
+        
+        {/* CORRECTED: Removed the duplicated and nested nav blocks */}
         <div className="mb-6 border-b border-gray-200">
           <nav className="flex space-x-8">
             <button
@@ -102,28 +91,33 @@ export default function MainApp() {
             >
               {t('main.tab.cases')}
             </button>
+
+            {/* CORRECTED: Wrapped the two admin buttons in a React Fragment <>...</> */}
             {user?.role === 'admin' && (
-              <button
-                onClick={() => setActiveTab('evidence')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'evidence'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                ראיות
-              </button>
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'admin'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {t('main.tab.admin')}
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('evidence')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'evidence'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  ראיות
+                </button>
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'admin'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t('main.tab.admin')}
+                </button>
+              </>
             )}
+
             <button
               onClick={() => setActiveTab('profile')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
