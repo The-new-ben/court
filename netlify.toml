@@ -1,12 +1,11 @@
 [build]
-  # מנקה קבצים מקונפליקטים ואז בונה את האתר
-  command = "npx strip-conflicts && npm ci && npm run build"
+  command = "npm ci && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.11.1"
 
-# SPA redirect (React / Vite / Single Page App)
+# SPA redirect (React/Vite) – שכל כתובת תגיע ל-index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
