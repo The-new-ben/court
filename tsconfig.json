@@ -1,21 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2020",              // (לאיזו גרסת JS לקמפל)
-    "lib": ["DOM", "ES2020"],        // (ספריות סטנדרטיות זמינות)
-    "jsx": "react-jsx",              // (תמיכת JSX של React)
+    "target": "ES2020",
+    "lib": ["DOM", "ES2020"],
+    "jsx": "react-jsx",
     "module": "ESNext",
-    "moduleResolution": "Bundler",   // (מותאם ל-Vite)
-    "allowJs": true,                 // (מאפשר גם קבצי .js)
+    "moduleResolution": "Bundler",
+    "allowJs": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,                  // (בדיקה בלבד—בלי לייצר קבצים)
+    "noEmit": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": [
-    "src/**/*",
-    "vite.config.ts",
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "include": ["src/**/*", "vite.config.ts", "**/*.ts", "**/*.tsx"]
 }
