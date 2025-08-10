@@ -1,5 +1,6 @@
 [build]
-  command = "npm ci && npm run build"
+  # מנקה קבצים מקונפליקטים ואז בונה את האתר
+  command = "npx strip-conflicts && npm ci && npm run build"
   publish = "dist"
 
 [build.environment]
