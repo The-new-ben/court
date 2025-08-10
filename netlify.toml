@@ -1,0 +1,12 @@
+[build]
+  command = "npm ci && npm run build"  # (Netlify יריץ קודם התקנת תלויות ואז build)
+  publish = "dist"                     # (זו התיקייה שיוצאת מה-build)
+
+[build.environment]
+  NODE_VERSION = "20"                  # (גרסת Node ב-Netlify—יציב עבור Vite)
+
+# SPA (אפליקציית צד-לקוח אחת) - כל הנתיבים מפנים ל-index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
