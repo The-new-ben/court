@@ -1,6 +1,6 @@
 [build]
-  # מתקין תלויות רגילות, משלים חבילות חסרות אוטומטית, ורק אז בונה
-  command = "npm ci && node scripts/auto-install-missing.cjs && npm run build"
+  # מתעלמים מה-lock הישן, מתקינים מחדש, ואז בונים
+  command = "rm -f package-lock.json && npm install --no-audit --no-fund && npm run build"
   publish = "dist"
 
 [build.environment]
