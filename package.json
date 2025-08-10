@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "commonjs",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "node --test backend/__tests__/scheduleService.test.js"
+    "dev": "vite",                          // (פיתוח מקומי)
+    "build:ts": "tsc -p tsconfig.json --noEmit", // (בודק TypeScript; --noEmit=לא מייצר קבצים—רק בודק שגיאות)
+    "build": "npm run build:ts && vite build",   // (מה ש-Netlify מריץ: קודם בדיקת TS ואז בניית האתר)
+    "lint": "eslint .",                     // (בדיקות קוד סטטיות—לא חובה ל-Netlify)
+    "preview": "vite preview",              // (תצוגה של ה-Build מקומית)
+    "test": "node --test backend/__tests__/scheduleService.test.js" // (בדיקות—לא חובה ל-Netlify)
   },
   "dependencies": {
     "@google/genai": "^1.12.0",
@@ -41,5 +42,8 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=18"   // (מבטיח תאימות בסביבת Netlify/CI)
   }
 }
