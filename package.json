@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build:ts": "tsc -p tsconfig.json --noEmit",
-    "build": "node scripts/strip-conflicts.cjs && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test backend/__tests__/scheduleService.test.js"
