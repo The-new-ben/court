@@ -5,6 +5,7 @@
 [build.environment]
   NODE_VERSION = "20.11.1"
 
+# SPA redirect (React / Vite / Single Page App)
 [[redirects]]
   from = "/*"
   to = "/index.html"
