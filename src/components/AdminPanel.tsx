@@ -16,14 +16,18 @@ interface AuditLog {
   timestamp: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// עדיפות ל־VITE_API_URL; נפילה ל־API_BASE_URL; לבסוף localhost
+const API_URL: string =
+  (import.meta.env.VITE_API_URL as string) ||
+  (API_BASE_URL as string) ||
+  'http://localhost:5001/api';
 
 export default function AdminPanel() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCases: 0,
     systemHealth: 'תקין',
-    lastBackup: 'לא זמין'
+    lastBackup: 'לא זמין',
   });
   const [userList, setUserList] = useState<any[]>([]);
   const roles = ['admin', 'judge', 'lawyer', 'litigant', 'clerk'];
@@ -35,6 +39,7 @@ export default function AdminPanel() {
     loadStats();
     loadUsers();
     loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -44,26 +49,27 @@ export default function AdminPanel() {
   const loadStats = async () => {
     try {
       // Check backend health
-        const response = await fetch(`${API_BASE_URL}/health`);
       const response = await fetch(`${API_URL}/health`);
       if (response.ok) {
         const data = await response.json();
-        setStats(prev => ({
+        setStats((prev) => ({
           ...prev,
           totalUsers: data.users || 0,
-          systemHealth: 'תקין'
+          systemHealth: 'תקין',
         }));
+      } else {
+        setStats((prev) => ({ ...prev, systemHealth: 'שגיאה בחיבור' }));
       }
     } catch {
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
-        systemHealth: 'שגיאה בחיבור'
+        systemHealth: 'שגיאה בחיבור',
       }));
     }
 
     try {
       const totalCases = await getCaseCount();
-      setStats(prev => ({ ...prev, totalCases }));
+      setStats((prev) => ({ ...prev, totalCases }));
     } catch (error) {
       console.warn('Could not get cases count:', error);
     }
@@ -81,7 +87,7 @@ export default function AdminPanel() {
   const updateRole = async (id: string, role: string) => {
     try {
       await adminService.updateUserRole(id, role);
-      setUserList(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+      setUserList((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     } catch (error) {
       alert('שגיאה בעדכון תפקיד: ' + error);
     }
@@ -93,10 +99,10 @@ export default function AdminPanel() {
       const data = {
         exportDate: new Date().toISOString(),
         cases,
-        totalCases: cases.length
+        totalCases: cases.length,
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json'
+        type: 'application/json',
       });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -114,13 +120,12 @@ export default function AdminPanel() {
       const params = new URLSearchParams();
       if (logFilters.user) params.append('user', logFilters.user);
       if (logFilters.action) params.append('action', logFilters.action);
-      const response = await fetch(`http://localhost:5001/api/logs?${params.toString()}`, {
-        credentials: 'include'
+
       const token = localStorage.getItem('hypercourt_token');
-        const response = await fetch(`${API_BASE_URL}/logs?${params.toString()}`, {
-        const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      const response = await fetch(`${API_URL}/logs?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+
       if (response.ok) {
         const data = await response.json();
         setLogs(data);
@@ -143,6 +148,10 @@ export default function AdminPanel() {
         toast('שגיאה במחיקת נתונים: ' + error);
       }
     }
+  };
+
+  const handleOpenHealth = () => {
+    window.open(`${API_URL}/health`, '_blank');
   };
 
   return (
@@ -199,7 +208,7 @@ export default function AdminPanel() {
         {/* Admin Actions */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">פעולות ניהול</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={exportData}
@@ -213,7 +222,7 @@ export default function AdminPanel() {
             </button>
 
             <button
-              onClick={() => loadStats()}
+              onClick={loadStats}
               className="flex items-center gap-3 bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors"
             >
               <Activity size={20} />
@@ -236,8 +245,7 @@ export default function AdminPanel() {
 
             <button
               className="flex items-center gap-3 bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors"
-              onClick={() => window.open(`${API_BASE_URL}/health`, '_blank')}
-              onClick={() => window.open(`${API_URL}/health`, '_blank')}
+              onClick={handleOpenHealth}
             >
               <Settings size={20} />
               <div className="text-right">
@@ -261,7 +269,7 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {userList.map(u => (
+                {userList.map((u) => (
                   <tr key={u.id}>
                     <td className="px-4 py-2">{u.name}</td>
                     <td className="px-4 py-2">{u.email}</td>
@@ -271,8 +279,10 @@ export default function AdminPanel() {
                         onChange={(e) => updateRole(u.id, e.target.value)}
                         className="border border-gray-300 rounded-md p-1"
                       >
-                        {roles.map(r => (
-                          <option key={r} value={r}>{r}</option>
+                        {roles.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -303,14 +313,14 @@ export default function AdminPanel() {
               placeholder="משתמש"
               className="border rounded p-2 flex-1"
               value={logFilters.user}
-              onChange={e => setLogFilters(prev => ({ ...prev, user: e.target.value }))}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, user: e.target.value }))}
             />
             <input
               type="text"
               placeholder="פעולה"
               className="border rounded p-2 flex-1"
               value={logFilters.action}
-              onChange={e => setLogFilters(prev => ({ ...prev, action: e.target.value }))}
+              onChange={(e) => setLogFilters((prev) => ({ ...prev, action: e.target.value }))}
             />
           </div>
           <div className="overflow-x-auto">
@@ -327,7 +337,9 @@ export default function AdminPanel() {
                   <tr key={index}>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.user}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{log.action}</td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
