@@ -1,19 +1,11 @@
-# netlify.toml
-
 [build]
-  # פקודת הבנייה הסטנדרטית.
-  command = "npm run build"
-  # ספריית הפלט של הבנייה (שנה ל-"build" אם אתה משתמש ב-Create React App).
+  # מתקין תלויות רגילות, משלים חבילות חסרות אוטומטית, ורק אז בונה
+  command = "npm ci && node scripts/auto-install-missing.cjs && npm run build"
   publish = "dist"
 
 [build.environment]
-  # קבע גרסת Node.js יציבה כדי למנוע אי-תאימות.
   NODE_VERSION = "20.11.1"
-  
-  # אם הבנייה נכשלת על שגיאות תאימות בין ספריות (EER_DEPS), הסר את ההערה מהשורה הבאה:
-  # NPM_FLAGS = "--legacy-peer-deps"
 
-# הגדרה חיונית לאפליקציות SPA (כמו React/Vite) כדי שהניווט יעבוד כראוי.
 [[redirects]]
   from = "/*"
   to = "/index.html"
