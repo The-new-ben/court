@@ -1,11 +1,13 @@
 [build]
-  command = "npm ci && npm run build"
+  # מריץ ניקוי: אם יש scripts/strip-conflicts.cjs → נריץ אותו.
+  # אם אין/נפל → Fallback עם sed שמסיר רק את שורות המארקרים, ואז נמשיך לבנייה.
+  command = "( [ -f scripts/strip-conflicts.cjs ] && node scripts/strip-conflicts.cjs || (echo 'fallback: sed cleanup' && git ls-files -z | xargs -0 sed -i '/^<<<<<<< .*/d;/^=======$/d;/^>>>>>>> .*/d') ) && npm ci && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.11.1"
 
-# SPA redirect (React/Vite) – שכל כתובת תגיע ל-index.html
+# SPA redirect (React/Vite)
 [[redirects]]
   from = "/*"
   to = "/index.html"
