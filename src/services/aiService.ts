@@ -1,35 +1,27 @@
 import { API_BASE_URL } from '../config';
-import type { ChatMessage } from '../../types';
 
-const API_URL = 'http://localhost:5001/api';
+// אפשר להגדיר את API_URL על בסיס סביבת Vite וליפול ל-localhost.
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export const aiService = {
-  async chat(messages: ChatMessage[], model: string) {
-    const token = localStorage.getItem('hypercourt_token');
-    
   async chat(messages: any[], model: string) {
     const token = localStorage.getItem('hypercourt_token');
-    
-    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
     const response = await fetch(`${API_URL}/ai/chat`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      credentials: 'include',
-      body: JSON.stringify({ model, messages })
+      body: JSON.stringify({ model, messages }),
     });
-    
+
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(`שגיאת שרת (${response.status}): ${data.error || data.message}`);
+      throw new Error(`Server error (${response.status}): ${data.error || data.message}`);
     }
-    
     if (!data.choices || data.choices.length === 0) {
-      throw new Error("המודל החזיר תשובה ריקה.");
+      throw new Error('The model returned an empty response.');
     }
-    
     return data.choices[0].message.content;
-  }
+  },
 };
