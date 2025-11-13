@@ -1,6 +1,0 @@
-{
-  "name": "Virtual Court",
-  "description": "A sophisticated virtual courtroom application featuring a real-time transcript and an AI-powered legal assistant to summarize proceedings, identify key arguments, and perform legal research using Gemini.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}

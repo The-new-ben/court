@@ -1,8 +1,0 @@
-Netlify environment variables
-VITE_API_URL
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-
-Supabase environment variables
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
