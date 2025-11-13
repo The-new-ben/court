@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ai/*": ["../../packages/ai/src/*"],
+      "@ai": ["../../packages/ai/src/index"],
+      "@core/*": ["../../packages/core/src/*"],
+      "@core": ["../../packages/core/src/index"],
+      "@db/*": ["../../packages/db/src/*"],
+      "@db": ["../../packages/db/src/index"],
+      "@ui/*": ["../../packages/ui/src/*"],
+      "@ui": ["../../packages/ui/src/index"]
+    },
+    "types": ["node"]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@ui",
+  "private": true,
+  "type": "module",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "lint": "echo 'noop'",
+    "test": "echo 'noop'",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@radix-ui/react-popover": "^1.0.7",
+    "tailwind-merge": "^2.2.1",
+    "react": "18.2.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
