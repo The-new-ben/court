@@ -1,18 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx"
-  },
-  "include": ["src"]
+  "files": [],
+  "references": [
+    { "path": "packages/ai" },
+    { "path": "packages/core" },
+    { "path": "packages/db" },
+    { "path": "packages/ui" },
+    { "path": "apps/web" },
+    { "path": "apps/worker" },
+    { "path": "scripts" }
+  ]
 }

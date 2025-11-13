@@ -1,0 +1,44 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.36.0",
+    "@uploadthing/react": "^6.7.0",
+    "@uploadthing/shared": "^6.7.0",
+    "@uploadthing/next": "^6.7.0",
+    "@auth/core": "^0.18.4",
+    "@auth/prisma-adapter": "^1.0.6",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.378.0",
+    "markdown-it": "^14.1.0",
+    "next": "14.2.3",
+    "next-auth": "^4.24.7",
+    "next-seo": "^6.5.0",
+    "next-sitemap": "^4.3.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "sharp": "^0.32.6",
+    "@ai": "workspace:*",
+    "@core": "workspace:*",
+    "@db": "workspace:*",
+    "@ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "@types/react": "18.2.46",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5",
+    "@tailwindcss/typography": "^0.5.10"
+  }
+}
